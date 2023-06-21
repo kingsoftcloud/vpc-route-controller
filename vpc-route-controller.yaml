@@ -1,0 +1,164 @@
+---
+# vpc-route-controller roles
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: vpc-route-controller
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+      - nodes/status
+      - events
+    verbs:
+      - list
+      - get
+      - patch
+      - create
+      - watch
+  - apiGroups:
+      - "coordination.k8s.io"
+    resources:
+      - leases
+    verbs:
+      - get
+      - create
+      - update
+
+---
+
+# Bind the flannel ClusterRole to the canal ServiceAccount.
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: vpc-route-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: vpc-route-controller
+subjects:
+- kind: ServiceAccount
+  name: vpc-route-controller
+  namespace: kube-system
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vpc-route-controller
+  namespace: kube-system
+---
+
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: vpc-route-controller-conf
+  namespace: "kube-system"
+  labels:
+    tier: node
+    app: vpc-route-controller
+data:
+  net-conf: |
+    {
+      "vpc_id": "058d7208-4c04-46f8-84df-8602f043e442",
+      "network_endpoint": "http://internal.api.ksyun.com",
+      "aksk_type": "configmap"
+    }
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vpc-route-controller
+  namespace: "kube-system"
+  labels:
+    tier: node
+    k8s-app: vpc-route-controller
+spec:
+  selector:
+    matchLabels:
+      tier: node
+      k8s-app: vpc-route-controller
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        tier: node
+        k8s-app: vpc-route-controller
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: type
+                operator: NotIn
+                values:
+                - virtual-kubelet
+      serviceAccountName: vpc-route-controller
+      containers:
+      - name: vpc-route-controller
+        image: hub.kce.ksyun.com/ksyun/vpc-route-controller:latest
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: 300m
+            memory: 500M
+          requests:
+            cpu: 150m
+            memory: 64M
+        command: [ "/usr/bin/vpc-route-controller" ]
+        securityContext:
+          privileged: true
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NET_CONF 
+          valueFrom:
+            configMapKeyRef:
+              name: vpc-route-controller-conf
+              key: net-conf
+        volumeMounts:
+        - name: cni
+          mountPath: /etc/cni/net.d
+	- name: aksk
+          mountPath: /etc/aksk
+      hostNetwork: true
+      tolerations:
+        # Make sure canal gets scheduled on all nodes.
+        - operator: Exists
+        # Mark the pod as a critical add-on for rescheduling.
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+      volumes:
+        - name: cni
+          hostPath:
+            path: /etc/cni/net.d
+        - name: net-conf
+          configMap:
+            name: vpc-route-controller-conf
+	- name: aksk
+          configMap:
+            name: user-temp-aksk
+
+---
