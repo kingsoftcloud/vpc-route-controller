@@ -2,7 +2,10 @@ module newgit.op.ksyun.com/kce/vpc-route-controller
 
 go 1.19
 
+replace	newgit.op.ksyun.com/kce/aksk-provider => ../aksk-provider
+
 require (
+	newgit.op.ksyun.com/kce/aksk-provider v1.0.0
 	github.com/avast/retry-go/v4 v4.3.4
 	github.com/aws/aws-sdk-go v1.44.279
 	github.com/ghodss/yaml v1.0.0

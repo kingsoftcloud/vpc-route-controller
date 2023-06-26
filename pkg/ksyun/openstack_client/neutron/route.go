@@ -9,12 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/aksk"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/aksk/config/types"
 	kopHttp "newgit.op.ksyun.com/kce/vpc-route-controller/pkg/http"
 	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
 	openTypes "newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
 	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/utils"
+
+	prvd "newgit.op.ksyun.com/kce/aksk-provider"
 )
 
 const (
@@ -28,9 +28,9 @@ type RouteClient struct {
 	conf     *config.Config
 	client   *kopHttp.KopClient
 	tenantID string
-	aksk     *types.AKSK
 	headers  map[string]string
 	lock     sync.Mutex
+	akskProvider prvd.AKSKProvider
 }
 
 func NewRouteClient(ctx context.Context, conf *config.Config) (*RouteClient, error) {
@@ -54,7 +54,7 @@ func NewRouteClient(ctx context.Context, conf *config.Config) (*RouteClient, err
 		headers: headers,
 		client:  dataClient,
 		//tenantID: conf.TenantID,
-		aksk: &types.AKSK{},
+		akskProvider: conf.AkskProvider,
 	}
 
 	return routeClient, nil
@@ -64,10 +64,11 @@ func (c *RouteClient) CreateRoute(args *openTypes.RouteArgs) (string, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	// http://{{neutron_host}}:9696/v2.0/vpc/routes
-	if err := aksk.GetAKSK(c.conf.Kubeconfig, c.aksk, c.conf); err != nil {
+	aksk, err := c.akskProvider.GetAKSK()
+	if err != nil {
 		return "", err
 	}
+
 	action := url.Values{
 		"Action":               []string{"CreateRoute"},
 		"Version":              []string{defaultVersion},
@@ -77,15 +78,15 @@ func (c *RouteClient) CreateRoute(args *openTypes.RouteArgs) (string, error) {
 		"DestinationCidrBlock": []string{args.CidrBlock},
 	}
 	klog.Infof("create neutron route : %s", c.conf.NetworkEndpoint)
-	if len(c.aksk.SecurityToken) != 0 {
-		c.headers["X-Ksc-Security-Token"] = c.aksk.SecurityToken
+	if len(aksk.SecurityToken) != 0 {
+		c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
 	}
 	c.client.SetEndpoint(c.conf.NetworkEndpoint)
 	c.client.SetHeader(c.headers)
 	c.client.SetBody(args)
 	c.client.SetUrlQuery("", action)
 	c.client.SetMethod(kopHttp.POST)
-	c.client.SetSigner(defautlServerName, c.aksk.Region, c.aksk.AK, c.aksk.SK)
+	c.client.SetSigner(defautlServerName, c.conf.Region, aksk.AK, aksk.SK)
 	data, err := c.client.Go()
 	if err != nil {
 		return "", fmt.Errorf("kop create route %v err: %v", args, err)
@@ -101,24 +102,26 @@ func (c *RouteClient) CreateRoute(args *openTypes.RouteArgs) (string, error) {
 func (c *RouteClient) DeleteRoute(id string) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	// http://{{neutron_host}}:9696/v2.0/vpc/routes
-	if err := aksk.GetAKSK(c.conf.Kubeconfig, c.aksk, c.conf); err != nil {
-		return err
-	}
+
+        aksk, err := c.akskProvider.GetAKSK()
+        if err != nil {
+                return err
+        }
+
 	action := url.Values{
 		"Action":  []string{"DeleteRoute"},
 		"Version": []string{defaultVersion},
 		"RouteId": []string{id},
 	}
 	klog.Infof("create neutron route : %s", c.conf.NetworkEndpoint)
-	if len(c.aksk.SecurityToken) != 0 {
-		c.headers["X-Ksc-Security-Token"] = c.aksk.SecurityToken
+	if len(aksk.SecurityToken) != 0 {
+		c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
 	}
 	c.client.SetEndpoint(c.conf.NetworkEndpoint)
 	c.client.SetHeader(c.headers)
 	c.client.SetUrlQuery("", action)
 	c.client.SetMethod(kopHttp.DELETE)
-	c.client.SetSigner(defautlServerName, c.aksk.Region, c.aksk.AK, c.aksk.SK)
+	c.client.SetSigner(defautlServerName, c.conf.Region, aksk.AK, aksk.SK)
 	if _, err := c.client.Go(); err != nil {
 		return fmt.Errorf("kop delete route %s err: %v", id, err)
 	}
@@ -128,10 +131,12 @@ func (c *RouteClient) DeleteRoute(id string) error {
 func (c *RouteClient) ListRoutes(args *openTypes.RouteArgs) ([]openTypes.RouteSetType, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	// http://{{neutron_host}}:9696/v2.0/vpc/routes
-	if err := aksk.GetAKSK(c.conf.Kubeconfig, c.aksk, c.conf); err != nil {
-		return nil, err
-	}
+
+        aksk, err := c.akskProvider.GetAKSK()
+        if err != nil {
+                return nil, err
+        }
+
 	action := url.Values{
 		"Action":           []string{"DescribeRoutes"},
 		"Version":          []string{defaultVersion},
@@ -141,14 +146,14 @@ func (c *RouteClient) ListRoutes(args *openTypes.RouteArgs) ([]openTypes.RouteSe
 		"Filter.2.Value.1": []string{args.InstanceType},
 	}
 	klog.Infof("list neutron route : %s", c.conf.NetworkEndpoint)
-	if len(c.aksk.SecurityToken) != 0 {
-		c.headers["X-Ksc-Security-Token"] = c.aksk.SecurityToken
+	if len(aksk.SecurityToken) != 0 {
+		c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
 	}
 	c.client.SetEndpoint(c.conf.NetworkEndpoint)
 	c.client.SetHeader(c.headers)
 	c.client.SetUrlQuery("", action)
 	c.client.SetMethod(kopHttp.GET)
-	c.client.SetSigner(defautlServerName, c.aksk.Region, c.aksk.AK, c.aksk.SK)
+	c.client.SetSigner(defautlServerName, c.conf.Region, aksk.AK, aksk.SK)
 	data, err := c.client.Go()
 	if err != nil {
 		return nil, fmt.Errorf("kop list routes %v err: %v", args, err)
@@ -165,10 +170,12 @@ func (c *RouteClient) ListRoutes(args *openTypes.RouteArgs) ([]openTypes.RouteSe
 func (c *RouteClient) GetRoutes(args *openTypes.RouteArgs) ([]openTypes.RouteSetType, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	// http://{{neutron_host}}:9696/v2.0/vpc/routes
-	if err := aksk.GetAKSK(c.conf.Kubeconfig, c.aksk, c.conf); err != nil {
-		return nil, err
-	}
+
+        aksk, err := c.akskProvider.GetAKSK()
+        if err != nil {
+                return nil, err
+        }
+
 	action := url.Values{
 		"Action":           []string{"DescribeRoutes"},
 		"Version":          []string{defaultVersion},
@@ -180,17 +187,17 @@ func (c *RouteClient) GetRoutes(args *openTypes.RouteArgs) ([]openTypes.RouteSet
 		"Filter.3.Value.1": []string{args.CidrBlock},
 	}
 	klog.Infof("get neutron route : %s", c.conf.NetworkEndpoint)
-	if len(c.aksk.SecurityToken) != 0 {
-		c.headers["X-Ksc-Security-Token"] = c.aksk.SecurityToken
+	if len(aksk.SecurityToken) != 0 {
+		c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
 	}
 	c.client.SetEndpoint(c.conf.NetworkEndpoint)
 	c.client.SetHeader(c.headers)
 	c.client.SetUrlQuery("", action)
 	c.client.SetMethod(kopHttp.GET)
-	c.client.SetSigner(defautlServerName, c.aksk.Region, c.aksk.AK, c.aksk.SK)
+	c.client.SetSigner(defautlServerName, c.conf.Region, aksk.AK, aksk.SK)
 	data, err := c.client.Go()
 	if err != nil {
-		return nil, fmt.Errorf("kop get routes %v err: %v", args, err)
+		return nil, fmt.Errorf("kop get routes %v err: %v: ====== %#v", args, err, aksk)
 	}
 
 	response := new(openTypes.GetRoutesResponse)
@@ -205,24 +212,25 @@ func (c *RouteClient) GetRoute(id string) (*openTypes.RouteSetType, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	// http://{{neutron_host}}:9696/v2.0/vpc/routes/<route_id>
-	if err := aksk.GetAKSK(c.conf.Kubeconfig, c.aksk, c.conf); err != nil {
-		return nil, err
-	}
+        aksk, err := c.akskProvider.GetAKSK()
+        if err != nil {
+                return nil, err
+        }
+
 	action := url.Values{
 		"Action":    []string{"DescribeRoutes"},
 		"Version":   []string{defaultVersion},
 		"RouteId.1": []string{id},
 	}
 	klog.Infof("DescribeRoute neutron route : %s", c.conf.NetworkEndpoint)
-	if len(c.aksk.SecurityToken) != 0 {
-		c.headers["X-Ksc-Security-Token"] = c.aksk.SecurityToken
+	if len(aksk.SecurityToken) != 0 {
+		c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
 	}
 	c.client.SetEndpoint(c.conf.NetworkEndpoint)
 	c.client.SetHeader(c.headers)
 	c.client.SetUrlQuery("", action)
 	c.client.SetMethod(kopHttp.GET)
-	c.client.SetSigner(defautlServerName, c.aksk.Region, c.aksk.AK, c.aksk.SK)
+	c.client.SetSigner(defautlServerName, c.conf.Region, aksk.AK, aksk.SK)
 	data, err := c.client.Go()
 	if err != nil {
 		return nil, fmt.Errorf("kop get route %s err: %v", id, err)

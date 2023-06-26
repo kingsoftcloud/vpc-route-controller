@@ -16,7 +16,7 @@ GIT_COMMIT=$(shell git rev-parse HEAD)
 BUILD_DATE=$(shell date +%Y-%m-%dT%H:%M:%S%z)
 
 CIPHER_KEY="8cca0smDmR478v8F"
-AKSK_PKG=newgit.op.ksyun.com/kce/vpc-route-controller/pkg/aksk
+KSYUN_PKG=newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun
 
 ldflags="-s -w -X ${AKSK_PKG}.DefaultCipherKey=${CIPHER_KEY} -X $(VERSION_PKG).Version=$(TAG) -X $(VERSION_PKG).GitCommit=${GIT_COMMIT} -X ${VERSION_PKG}.BuildDate=${BUILD_DATE}"
 
