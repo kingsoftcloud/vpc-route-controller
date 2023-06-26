@@ -1,6 +1,9 @@
 package config
 
-import "k8s.io/apimachinery/pkg/util/wait"
+import (
+	"k8s.io/apimachinery/pkg/util/wait"
+	prvd "newgit.op.ksyun.com/kce/aksk-provider"
+)
 
 var (
 	DefaultNetworkEndpoint = "http://internal.api.ksyun.com"
@@ -27,14 +30,14 @@ type Config struct {
 	Auth bool `json:"auth"`
 	// aksk type
 	AkskType      string `json:"aksk_type"`
-	AkskName      string `json:"aksk_name"`
-	AkskNamespace string `json:"aksk_namespace"`
 	// X-Request-ID
 	AK            string `json:"ak"`
 	SK            string `json:"sk"`
 	SecurityToken string `json:"securityToken"`
+	AkskProvider prvd.AKSKProvider `json:"aksk_provider"`
+	AkskFilePath string `json:"aksk_file_path"`
+	Encrypt bool `json:"encrypt"`
 
-	Key string `json:"key"`
 
 	RequestIdPrefix string `json:"requestIdPrefix"`
 
