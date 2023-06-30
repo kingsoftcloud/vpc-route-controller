@@ -1,0 +1,729 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: network-attachment-definitions.k8s.cni.cncf.io
+spec:
+  group: k8s.cni.cncf.io
+  scope: Namespaced
+  names:
+    plural: network-attachment-definitions
+    singular: network-attachment-definition
+    kind: NetworkAttachmentDefinition
+    shortNames:
+    - net-attach-def
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: 'NetworkAttachmentDefinition is a CRD schema specified by the Network Plumbing
+            Working Group to express the intent for attaching pods to one or more logical or physical
+            networks. More information available at: https://github.com/k8snetworkplumbingwg/multi-net-spec'
+          type: object
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this represen
+                tation of an object. Servers should convert recognized schemas to the
+                latest internal value, and may reject unrecognized values. More info:
+                https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource this
+                object represents. Servers may infer this from the endpoint the client
+                submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: 'NetworkAttachmentDefinition spec defines the desired state of a network attachment'
+              type: object
+              properties:
+                config:
+                  description: 'NetworkAttachmentDefinition config is a JSON-formatted CNI configuration'
+                  type: string
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: multus
+rules:
+  - apiGroups: ["k8s.cni.cncf.io"]
+    resources:
+      - '*'
+    verbs:
+      - '*'
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - pods/status
+    verbs:
+      - get
+      - update
+  - apiGroups:
+      - ""
+      - events.k8s.io
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+      - update
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: multus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: multus
+subjects:
+- kind: ServiceAccount
+  name: multus
+  namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: multus
+  namespace: kube-system
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: multus-cni-config
+  namespace: kube-system
+  labels:
+    tier: node
+    app: multus
+data:
+  # NOTE: If you'd prefer to manually apply a configuration file, you may create one here.
+  # In the case you'd like to customize the Multus installation, you should change the arguments to the Multus pod
+  # change the "args" line below from
+  # - "--multus-conf-file=auto"
+  # to:
+  # "--multus-conf-file=/tmp/multus-conf/70-multus.conf"
+  # Additionally -- you should ensure that the name "70-multus.conf" is the alphabetically first name in the
+  # /etc/cni/net.d/ directory on each node, otherwise, it will not be used by the Kubelet.
+  cni-conf.json: |
+    {
+      "cniVersion": "0.3.1",
+      "name": "multus-cni-network",
+      "confDir": "/etc/cni/net.d/",
+      "type": "multus",
+      "capabilities": {
+        "portMappings": true,
+        "bandwidth": true
+      },
+      "delegates": [
+        {
+          "name": "k8s-pod-network",
+          "cniVersion": "0.3.0",
+          "plugins": [
+            {
+              "type": "calico",
+              "log_level": "info",
+              "datastore_type": "kubernetes",
+              "nodename": "__KUBERNETES_NODE_NAME__",
+              "nodename_file_optional": true,
+              "ipam": {
+                "type": "host-local",
+                "subnet": "usePodCidr"
+              },
+              "policy": {
+                  "type": "k8s"
+              },
+              "kubernetes": {
+                  "kubeconfig": "/etc/cni/net.d/calico-kubeconfig"
+              }
+            },
+            {
+              "type": "portmap",
+              "snat": false,
+              "capabilities": {"portMappings": true}
+            },
+            {
+              "type": "bandwidth",
+              "capabilities":{
+                "bandwidth":true
+              }
+            }
+          ]
+        }
+      ],
+      "kubeconfig": "/etc/cni/net.d/multus.d/multus.kubeconfig"
+    }
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-multus-ds-amd64
+  namespace: kube-system
+  labels:
+    k8s-app: multus
+spec:
+  selector:
+    matchLabels:
+      k8s-app: multus
+  template:
+    metadata:
+      labels:
+        k8s-app: multus
+    spec:
+      containers:
+      - name: kube-multus
+        image: hub.kce.ksyun.com/ksyun/nfvpe/multus:latest
+        imagePullPolicy: Always
+        command: ["/entrypoint.sh"]
+        args:
+        - "--multus-conf-file=/tmp/multus-conf/00-multus.conf"
+        - "--cni-version=0.3.1"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "50Mi"
+          limits:
+            cpu: "100m"
+            memory: "50Mi"
+        env:
+        - name: KUBERNETES_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        volumeMounts:
+        - name: cni
+          mountPath: /host/etc/cni/net.d
+        - name: cnibin
+          mountPath: /host/opt/cni/bin
+        - name: multus-cfg
+          mountPath: /tmp/multus-conf
+      volumes:
+        - name: cni
+          hostPath:
+            path: /etc/cni/net.d
+        - name: cnibin
+          hostPath:
+            path: /opt/cni/bin
+        - name: multus-cfg
+          configMap:
+            name: multus-cni-config
+            items:
+            - key: cni-conf.json
+              path: 00-multus.conf
+      hostNetwork: true
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: multus
+      priorityClassName: system-node-critical
+      tolerations:
+      - operator: Exists
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoExecute
+        operator: Exists
+  updateStrategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: calico-cni
+  namespace: kube-system
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: calico-cni
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts/token
+  resourceNames:
+  - calico-node
+  verbs:
+  - get
+  - watch
+  - create
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - serviceaccounts
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods/status
+  verbs:
+  - update
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  - nodes/status
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+  - patch
+- apiGroups:
+  - discovery.k8s.io
+  resources:
+  - endpointslices
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - networkpolicies
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - crd.projectcalico.org
+  resources:
+  - globalfelixconfigs
+  - felixconfigurations
+  - bgppeers
+  - globalbgpconfigs
+  - globalnetworksets
+  - hostendpoints
+  - bgpconfigurations
+  - ippools
+  - globalnetworkpolicies
+  - networkpolicies
+  - networksets
+  - clusterinformations
+  - ipamblocks
+  - ipamhandles
+  - caliconodestatuses
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - watch
+
+---
+
+# Bind the calico ClusterRole to the canal ServiceAccount.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: calico-cni
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: calico-cni
+subjects:
+- kind: ServiceAccount
+  name: calico-cni
+  namespace: kube-system
+
+---
+
+apiVersion: v1
+data:
+  calico_iface: ""
+  cni_network_config: |-
+    {
+      "name": "k8s-pod-network",
+      "cniVersion": "0.3.0",
+      "plugins": [
+        {
+          "type": "calico",
+          "log_level": "info",
+          "datastore_type": "kubernetes",
+          "nodename": "__KUBERNETES_NODE_NAME__",
+          "nodename_file_optional": true,
+          "ipam": {
+            "type": "host-local",
+            "subnet": "usePodCidr"
+          },
+          "policy": {
+              "type": "k8s"
+          },
+          "kubernetes": {
+              "kubeconfig": "__KUBECONFIG_FILEPATH__"
+          }
+        },
+        {
+          "type": "portmap",
+          "snat": true,
+          "capabilities": {"portMappings": true}
+        },
+        {
+          "type": "bandwidth",
+          "capabilities":{
+            "bandwidth":true
+          }
+        }
+      ]
+    }
+  masquerade: "false"
+  net-conf.json: |
+    {
+      "Backend": {
+        "kop_auth": true,
+        "Type": "ksc-vpc",
+        "neutron_endpoint": "http://internal.api.ksyun.com",
+        "app_endpoint": "http://internal.api.ksyun.com"
+      }
+    }
+kind: ConfigMap
+metadata:
+  name: calico-config
+  namespace: kube-system
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    k8s-app: calico-cni
+  name: calico-cni
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      k8s-app: calico-cni
+  template:
+    metadata:
+      labels:
+        k8s-app: calico-cni
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: type
+                operator: NotIn
+                values:
+                - virtual-kubelet
+      containers:
+      - command: ["/install-cni.sh"]
+        env:
+        - name: CNI_CONF_NAME
+          value: 10-calico.conflist
+        - name: KUBERNETES_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: CNI_NETWORK_CONFIG
+          valueFrom:
+            configMapKeyRef:
+              key: cni_network_config
+              name: calico-config
+        image: hub.kce.ksyun.com/ksyun/calico/cni:v3.24.6
+        imagePullPolicy: Always
+        name: install-cni
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /host/opt/cni/bin
+          name: cni-bin-dir
+        - mountPath: /host/etc/cni/net.d
+          name: cni-net-dir
+      dnsPolicy: ClusterFirst
+      hostNetwork: true
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: calico-cni
+      priorityClassName: system-node-critical
+      serviceAccountName: calico-cni
+      terminationGracePeriodSeconds: 0
+      tolerations:
+      - operator: Exists
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoExecute
+        operator: Exists
+      volumes:
+      - hostPath:
+          path: /opt/cni/bin
+          type: ""
+        name: cni-bin-dir
+      - hostPath:
+          path: /etc/cni/net.d
+          type: ""
+        name: cni-net-dir
+  updateStrategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
+    
+---
+apiVersion: v1
+data:
+  config: '{"NonMasqueradeCIDRs":["___POD_CIDR___","___VPC_CIDR___"],"MasqLinkLocal":true,"ResyncInterval":"1m0s"}'
+kind: ConfigMap
+metadata:
+  name: ip-masq-agent-config
+  namespace: kube-system
+
+---
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ip-masq-agent
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      k8s-app: ip-masq-agent
+  template:
+    metadata:
+      labels:
+        k8s-app: ip-masq-agent
+    spec:
+      tolerations:
+      - operator: Exists
+      hostNetwork: true
+      containers:
+      - name: ip-masq-agent
+        image: hub.kce.ksyun.com/ksyun/ip-masq-agent-amd64:v2.0.0
+        securityContext:
+          privileged: false
+          capabilities:
+            add: ["NET_ADMIN", "NET_RAW"]
+        volumeMounts:
+          - name: config
+            mountPath: /etc/config
+      volumes:
+        - name: config
+          configMap:
+            # Note this ConfigMap must be created in the same namespace as the daemon pods - this spec uses kube-system
+            name: ip-masq-agent-config
+            optional: true
+            items:
+              # The daemon looks for its config in a YAML file at /etc/config/ip-masq-agent
+              - key: config
+                path: ip-masq-agent
+---
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: k8s-pod-network
+  namespace: kube-system
+---
+
+---
+# vpc-route-controller roles
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: vpc-route-controller
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+      - nodes/status
+      - events
+    verbs:
+      - list
+      - get
+      - patch
+      - create
+      - watch
+  - apiGroups:
+      - "coordination.k8s.io"
+    resources:
+      - leases
+    verbs:
+      - get
+      - create
+      - update
+
+---
+
+# Bind the flannel ClusterRole to the canal ServiceAccount.
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: vpc-route-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: vpc-route-controller
+subjects:
+- kind: ServiceAccount
+  name: vpc-route-controller
+  namespace: kube-system
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vpc-route-controller
+  namespace: kube-system
+---
+
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: vpc-route-controller-conf
+  namespace: "kube-system"
+  labels:
+    tier: node
+    app: vpc-route-controller
+data:
+  net-conf: |
+    {
+      "region": "___REGION___",
+      "vpc_id": "___VPC_ID___",
+      "network_endpoint": "http://internal.api.ksyun.com",
+      "aksk_type": "configmap"
+    }
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vpc-route-controller
+  namespace: "kube-system"
+  labels:
+    tier: node
+    k8s-app: vpc-route-controller
+spec:
+  selector:
+    matchLabels:
+      tier: node
+      k8s-app: vpc-route-controller
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        tier: node
+        k8s-app: vpc-route-controller
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: type
+                operator: NotIn
+                values:
+                - virtual-kubelet
+      serviceAccountName: vpc-route-controller
+      hostNetwork: true
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+               matchExpressions:
+               - {key: k8s-app, operator: In, values: ["vpc-route-controller"]}
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: vpc-route-controller
+        image: hub.kce.ksyun.com/ksyun/vpc-route-controller:latest
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: 300m
+            memory: 500M
+          requests:
+            cpu: 150m
+            memory: 64M
+        command: [ "/usr/bin/vpc-route-controller" ]
+        securityContext:
+          privileged: true
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NET_CONF 
+          valueFrom:
+            configMapKeyRef:
+              name: vpc-route-controller-conf
+              key: net-conf
+        volumeMounts:
+        - name: cni
+          mountPath: /etc/cni/net.d
+        - name: aksk
+          mountPath: /etc/aksk
+      tolerations:
+        # Make sure canal gets scheduled on all nodes.
+        - operator: Exists
+        # Mark the pod as a critical add-on for rescheduling.
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+      volumes:
+        - name: cni
+          hostPath:
+            path: /etc/cni/net.d
+        - name: net-conf
+          configMap:
+            name: vpc-route-controller-conf
+	- name: aksk
+          configMap:
+            name: user-temp-aksk
+---
+

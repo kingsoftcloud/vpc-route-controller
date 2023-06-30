@@ -120,7 +120,8 @@ func conflictWithNodes(route *model.Route, nodes *v1.NodeList) bool {
 			klog.Errorf("error get conflict state from node: %v and route: %v", node.Name, route)
 			continue
 		}
-		if contains || (equal && route.InstanceId != node.Annotations["appengine.sdns.ksyun.com/instance-uuid"]) {
+		instanceId := getNodeInstanceId(node.Annotations)
+		if contains || (equal && route.InstanceId != instanceId) {
 			klog.Warningf("conflict route with node %v(%v) found, route: %+v", node.Name, ipv4Cidr, route)
 			return true
 		}
@@ -227,4 +228,16 @@ func (r *ReconcileRoute) NodeList() (*v1.NodeList, error) {
 	}
 	nodes.Items = mnodes
 	return nodes, nil
+}
+
+func getNodeInstanceId(annotations map[string]string) string {
+	if _, ok := annotations["appengine.sdns.ksyun.com/instance-uuid"]; ok {
+		return annotations["appengine.sdns.ksyun.com/instance-uuid"]
+	}
+
+	if _, ok := annotations["kce.sdns.ksyun.com/instanceId"]; ok {
+		return annotations["kce.sdns.ksyun.com/instanceId"]
+	}
+
+	return ""
 }

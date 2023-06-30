@@ -191,13 +191,14 @@ func (r *ReconcileRoute) syncCloudRoute(ctx context.Context, node *corev1.Node) 
 
 func (r *ReconcileRoute) addRouteForNode(ctx context.Context, ipv4Cidr string, node *corev1.Node, cachedRouteEntry []*model.Route) error {
 	var err error
-	if _, ok := node.Annotations["appengine.sdns.ksyun.com/instance-uuid"]; !ok {
+	instanceId := getNodeInstanceId(node.Annotations)
+	if len(instanceId) == 0 {
 		return fmt.Errorf("cannot find instance uuid.")
 	}
 	nodeRef := &corev1.ObjectReference{
 		Kind:      "Node",
 		Name:      node.Name,
-		UID:       types.UID(node.Annotations["appengine.sdns.ksyun.com/instance-uuid"]),
+		UID:       types.UID(instanceId),
 		Namespace: "",
 	}
 

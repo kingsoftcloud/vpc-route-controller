@@ -29,15 +29,14 @@ type Config struct {
 	// auth open api
 	Auth bool `json:"auth"`
 	// aksk type
-	AkskType      string `json:"aksk_type"`
+	AkskType string `json:"aksk_type"`
 	// X-Request-ID
-	AK            string `json:"ak"`
-	SK            string `json:"sk"`
-	SecurityToken string `json:"securityToken"`
-	AkskProvider prvd.AKSKProvider `json:"aksk_provider"`
-	AkskFilePath string `json:"aksk_file_path"`
-	Encrypt bool `json:"encrypt"`
-
+	AK            string            `json:"ak"`
+	SK            string            `json:"sk"`
+	SecurityToken string            `json:"securityToken"`
+	AkskProvider  prvd.AKSKProvider `json:"aksk_provider"`
+	AkskFilePath  string            `json:"aksk_file_path"`
+	Encrypt       bool              `json:"encrypt"`
 
 	RequestIdPrefix string `json:"requestIdPrefix"`
 
