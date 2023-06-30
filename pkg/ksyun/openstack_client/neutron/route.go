@@ -25,11 +25,11 @@ const (
 )
 
 type RouteClient struct {
-	conf     *config.Config
-	client   *kopHttp.KopClient
-	tenantID string
-	headers  map[string]string
-	lock     sync.Mutex
+	conf         *config.Config
+	client       *kopHttp.KopClient
+	tenantID     string
+	headers      map[string]string
+	lock         sync.Mutex
 	akskProvider prvd.AKSKProvider
 }
 
@@ -103,10 +103,10 @@ func (c *RouteClient) DeleteRoute(id string) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-        aksk, err := c.akskProvider.GetAKSK()
-        if err != nil {
-                return err
-        }
+	aksk, err := c.akskProvider.GetAKSK()
+	if err != nil {
+		return err
+	}
 
 	action := url.Values{
 		"Action":  []string{"DeleteRoute"},
@@ -132,10 +132,10 @@ func (c *RouteClient) ListRoutes(args *openTypes.RouteArgs) ([]openTypes.RouteSe
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-        aksk, err := c.akskProvider.GetAKSK()
-        if err != nil {
-                return nil, err
-        }
+	aksk, err := c.akskProvider.GetAKSK()
+	if err != nil {
+		return nil, err
+	}
 
 	action := url.Values{
 		"Action":           []string{"DescribeRoutes"},
@@ -171,10 +171,10 @@ func (c *RouteClient) GetRoutes(args *openTypes.RouteArgs) ([]openTypes.RouteSet
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-        aksk, err := c.akskProvider.GetAKSK()
-        if err != nil {
-                return nil, err
-        }
+	aksk, err := c.akskProvider.GetAKSK()
+	if err != nil {
+		return nil, err
+	}
 
 	action := url.Values{
 		"Action":           []string{"DescribeRoutes"},
@@ -212,10 +212,10 @@ func (c *RouteClient) GetRoute(id string) (*openTypes.RouteSetType, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-        aksk, err := c.akskProvider.GetAKSK()
-        if err != nil {
-                return nil, err
-        }
+	aksk, err := c.akskProvider.GetAKSK()
+	if err != nil {
+		return nil, err
+	}
 
 	action := url.Values{
 		"Action":    []string{"DescribeRoutes"},

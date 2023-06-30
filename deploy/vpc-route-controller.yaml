@@ -67,7 +67,7 @@ metadata:
 data:
   net-conf: |
     {
-      "vpc_id": "058d7208-4c04-46f8-84df-8602f043e442",
+      "vpc_id": "___VPC_ID___",
       "network_endpoint": "http://internal.api.ksyun.com",
       "aksk_type": "configmap"
     }
@@ -108,6 +108,14 @@ spec:
                 values:
                 - virtual-kubelet
       serviceAccountName: vpc-route-controller
+      hostNetwork: true
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+               matchExpressions:
+               - {key: k8s-app, operator: In, values: ["vpc-route-controller"]}
+            topologyKey: kubernetes.io/hostname
       containers:
       - name: vpc-route-controller
         image: hub.kce.ksyun.com/ksyun/vpc-route-controller:latest
