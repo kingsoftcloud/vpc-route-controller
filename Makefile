@@ -4,7 +4,6 @@ CMD_DIR := ./cmd/manager
 # Project output directory.
 OUTPUT_DIR := ./output
 
-TAG?=$(shell git describe --tags)
 VERSION := latest
 
 # Ksyun repository
@@ -18,7 +17,7 @@ BUILD_DATE=$(shell date +%Y-%m-%dT%H:%M:%S%z)
 CIPHER_KEY=$(shell echo "8cca0smDmR478v8F")
 KSYUN_PKG=newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun
 
-ldflags="-s -w -X ${KSYUN_PKG}.DefaultCipherKey=${CIPHER_KEY} -X $(VERSION_PKG).Version=$(TAG) -X $(VERSION_PKG).GitCommit=${GIT_COMMIT} -X ${VERSION_PKG}.BuildDate=${BUILD_DATE}"
+ldflags="-s -w -X ${KSYUN_PKG}.DefaultCipherKey=${CIPHER_KEY} -X $(VERSION_PKG).Version=$(VERSION) -X $(VERSION_PKG).GitCommit=${GIT_COMMIT} -X ${VERSION_PKG}.BuildDate=${BUILD_DATE}"
 
 all: compile build tag push
 
