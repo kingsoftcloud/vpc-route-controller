@@ -2,10 +2,8 @@ package controller
 
 import (
 	"fmt"
-
 	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/controller/route"
 	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
-
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 

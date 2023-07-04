@@ -73,7 +73,6 @@ func FindRoute(ctx context.Context, cfg *config.Config, cidr string) (*model.Rou
 		DomainId:     cfg.VpcID,
 		InstanceType: defaultRouteType,
 		CidrBlock:    cidr,
-		// InstanceId:   cfg.InstanceId,
 	}
 
 	log.Infof("Check ksc vpc route args: %v \n", getRoutes)

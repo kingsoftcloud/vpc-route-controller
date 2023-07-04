@@ -3,17 +3,19 @@ package route
 import (
 	"context"
 	"fmt"
+	"net"
+	"strings"
+	"sync"
+	"time"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
-	"net"
+
 	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/controller/helper"
 	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun"
 	neutronCfg "newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
 	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/model"
-	"strings"
-	"sync"
-	"time"
 )
 
 var (
@@ -40,13 +42,13 @@ func createRouteForInstance(ctx context.Context, conf *neutronCfg.Config, instan
 	err := wait.ExponentialBackoff(createBackoff, func() (bool, error) {
 		innerErr = ksyun.CreateRoute(ctx, conf, instanceId, cidr)
 		if innerErr != nil {
-			if strings.Contains(innerErr.Error(), "InvalidCIDRBlock.Duplicate") {
+			if strings.Contains(innerErr.Error(), "same with a route") {
 				route, findErr = ksyun.FindRoute(ctx, conf, cidr)
 				if findErr == nil && route != nil {
 					return true, nil
 				}
 				// fail fast, wait next time reconcile
-				klog.Errorf("Backoff creating route: same cidr with different providerID, %s", innerErr.Error())
+				klog.Errorf("Backoff creating route: same cidr exsits: %s", innerErr.Error())
 				return false, innerErr
 			}
 			klog.Errorf("Backoff creating route: %s", innerErr.Error())

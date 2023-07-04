@@ -13,10 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/controller/helper"
-	openstackCfg "newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/model"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/util/metric"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -24,6 +20,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	"time"
+
+	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/controller/helper"
+	openstackCfg "newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
+	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/model"
+	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/util/metric"
 )
 
 const (
