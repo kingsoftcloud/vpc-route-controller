@@ -9,12 +9,11 @@ import (
 	"sync"
 	"time"
 
+	prvd "newgit.op.ksyun.com/kce/aksk-provider"
 	kopHttp "newgit.op.ksyun.com/kce/vpc-route-controller/pkg/http"
 	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
 	openTypes "newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
 	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/utils"
-
-	prvd "newgit.op.ksyun.com/kce/aksk-provider"
 )
 
 const (

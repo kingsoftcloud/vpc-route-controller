@@ -19,12 +19,12 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
-	return fmt.Sprintf("Kscyun API Error: RequestId: %s Status Code: %d Type: %s Message: %s Detail: %s", e.RequestId, e.StatusCode, e.ErrorResponse.Type, e.ErrorResponse.Message, e.ErrorResponse.Detail)
+	return fmt.Sprintf("Ksyun API Error: RequestId: %s Status Code: %d Type: %s Message: %s Detail: %s", e.RequestId, e.StatusCode, e.ErrorResponse.Type, e.ErrorResponse.Message, e.ErrorResponse.Detail)
 }
 
 func GetClientErrorFromString(str string, req string) error {
 	errors := ErrorResponse{
-		Type:    "appclientFailure",
+		Type:    "vpcRouteControllerFailure",
 		Message: str,
 	}
 	rErrors := Error{
