@@ -35,6 +35,12 @@ func main() {
 
 	printVersion()
 
+    conf, err := ksyun.GetNeutronConfig()
+	if err != nil {
+		log.Error(err, "failed to get neutron config")
+		os.Exit(1)
+	}
+
 	// Get a config to talk to the api-server
 	cfg := config.GetConfigOrDie()
 	cfg.QPS = ctrlCfg.ControllerCFG.RuntimeConfig.QPS
@@ -46,12 +52,6 @@ func main() {
 	mgr, err := manager.New(cfg, ctrlCfg.BuildRuntimeOptions(ctrlCfg.ControllerCFG.RuntimeConfig))
 	if err != nil {
 		log.Error(err, "failed to create manager")
-		os.Exit(1)
-	}
-
-	conf, err := ksyun.GetNeutronConfig()
-	if err != nil {
-		log.Error(err, "failed to get neutron config")
 		os.Exit(1)
 	}
 
