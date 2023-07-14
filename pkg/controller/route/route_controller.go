@@ -128,6 +128,7 @@ func (r *ReconcileRoute) Reconcile(ctx context.Context, request reconcile.Reques
 				if route, ok := o.(*model.Route); ok {
 					start := time.Now()
 					var errList []error
+					klog.Infof("=================== %#v", route)
 					if err = deleteRouteForInstance(ctx, r.neutronConfig, route.DestinationCIDR); err != nil {
 						errList = append(errList, err)
 						klog.Errorf("error delete route entry for delete node %s route %v, error: %v", request.Name, route, err)

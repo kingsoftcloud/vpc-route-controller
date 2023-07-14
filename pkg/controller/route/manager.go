@@ -58,8 +58,13 @@ func createRouteForInstance(ctx context.Context, conf *neutronCfg.Config, instan
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("error create route for node %v, err: %v", innerErr)
+		return nil, fmt.Errorf("error create route for node %v, err: %v", instanceId, err)
 	}
+
+	if route == nil {
+		route, _ = ksyun.FindRoute(ctx, conf, cidr)
+	}
+
 	return route, nil
 }
 
