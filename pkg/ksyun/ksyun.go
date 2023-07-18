@@ -13,9 +13,8 @@ import (
 	openstackTypes "newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
 	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/model"
 
-	"newgit.op.ksyun.com/kce/aksk-provider/configmap"
 	"newgit.op.ksyun.com/kce/aksk-provider/env"
-	"newgit.op.ksyun.com/kce/aksk-provider/secret"
+	"newgit.op.ksyun.com/kce/aksk-provider/file"
 )
 
 const (
@@ -164,12 +163,10 @@ func GetNeutronConfig() (*config.Config, error) {
 	}
 
 	switch c.AkskType {
-	case "configmap":
-		c.AkskProvider = configmap.NewCMAKSKProvider(c.AkskFilePath)
-	case "secret":
-		c.AkskProvider = secret.NewSecretAKSKProvider(c.AkskFilePath, DefaultCipherKey)
 	case "env":
 		c.AkskProvider = env.NewEnvAKSKProvider(c.Encrypt, DefaultCipherKey)
+	case "file":
+		c.AkskProvider = file.NewFileAKSKProvider(c.AkskFilePath, DefaultCipherKey)
 	default:
 		return nil, fmt.Errorf("please set aksk type.")
 	}
