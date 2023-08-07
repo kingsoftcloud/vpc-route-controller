@@ -6,20 +6,20 @@ import (
 	"fmt"
 	"k8s.io/klog"
 	"net/url"
-	"sync"
 	"strings"
+	"sync"
 	"time"
 
-	prvd "newgit.op.ksyun.com/kce/aksk-provider"
-	kopHttp "newgit.op.ksyun.com/kce/vpc-route-controller/pkg/http"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
-	openTypes "newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/utils"
+	prvd "ezone.ksyun.com/code/kce/aksk-provider"
+	kopHttp "ezone.ksyun.com/code/kce/vpc-route-controller/pkg/http"
+	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
+	openTypes "ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
+	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/utils"
 )
 
 const (
 	defaultVersion         = "2016-03-04"
-	defautlServerName      = "vpc"
+	defaultServerName      = "vpc"
 	DefaultTimeout         = 60
 	DefaultWaitForInterval = 5
 )
@@ -48,7 +48,7 @@ func NewRouteClient(ctx context.Context, conf *config.Config) (*RouteClient, err
 	headers["User-Agent"] = "vpc-route-controller"
 	headers["Content-Type"] = "application/json"
 	headers["Accept"] = "application/json"
-	headers["X-Auth-User-Tag"] = "docker"
+	//headers["X-Auth-User-Tag"] = "docker"
 
 	routeClient := &RouteClient{
 		conf:    conf,
@@ -87,7 +87,7 @@ func (c *RouteClient) CreateRoute(args *openTypes.RouteArgs) (string, error) {
 	c.client.SetBody(args)
 	c.client.SetUrlQuery("", action)
 	c.client.SetMethod(kopHttp.POST)
-	c.client.SetSigner(defautlServerName, c.conf.Region, aksk.AK, aksk.SK)
+	c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
 	data, err := c.client.Go()
 	if err != nil {
 		if strings.Contains(err.Error(), "SecurityTokenExpired") {
@@ -98,7 +98,7 @@ func (c *RouteClient) CreateRoute(args *openTypes.RouteArgs) (string, error) {
 			if len(aksk.SecurityToken) != 0 {
 				c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
 			}
-			c.client.SetSigner(defautlServerName, c.conf.Region, aksk.AK, aksk.SK)
+			c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
 			data, err = c.client.Go()
 			if err != nil {
 				return "", fmt.Errorf("retry kop create route %v after reloading aksk err: %v", args, err)
@@ -137,7 +137,7 @@ func (c *RouteClient) DeleteRoute(id string) error {
 	c.client.SetHeader(c.headers)
 	c.client.SetUrlQuery("", action)
 	c.client.SetMethod(kopHttp.DELETE)
-	c.client.SetSigner(defautlServerName, c.conf.Region, aksk.AK, aksk.SK)
+	c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
 	if _, err := c.client.Go(); err != nil {
 		if strings.Contains(err.Error(), "SecurityTokenExpired") {
 			aksk, err := c.akskProvider.ReloadAKSK()
@@ -147,7 +147,7 @@ func (c *RouteClient) DeleteRoute(id string) error {
 			if len(aksk.SecurityToken) != 0 {
 				c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
 			}
-			c.client.SetSigner(defautlServerName, c.conf.Region, aksk.AK, aksk.SK)
+			c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
 			_, err = c.client.Go()
 			if err != nil {
 				return fmt.Errorf("retry kop delete route %v after reloading aksk err: %v", id, err)
@@ -184,7 +184,7 @@ func (c *RouteClient) ListRoutes(args *openTypes.RouteArgs) ([]openTypes.RouteSe
 	c.client.SetHeader(c.headers)
 	c.client.SetUrlQuery("", action)
 	c.client.SetMethod(kopHttp.GET)
-	c.client.SetSigner(defautlServerName, c.conf.Region, aksk.AK, aksk.SK)
+	c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
 	data, err := c.client.Go()
 	if err != nil {
 		if strings.Contains(err.Error(), "SecurityTokenExpired") {
@@ -195,7 +195,7 @@ func (c *RouteClient) ListRoutes(args *openTypes.RouteArgs) ([]openTypes.RouteSe
 			if len(aksk.SecurityToken) != 0 {
 				c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
 			}
-			c.client.SetSigner(defautlServerName, c.conf.Region, aksk.AK, aksk.SK)
+			c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
 			data, err = c.client.Go()
 			if err != nil {
 				return nil, fmt.Errorf("retry kop list routes %v after reloading aksk err: %v", args, err)
@@ -240,7 +240,7 @@ func (c *RouteClient) GetRoutes(args *openTypes.RouteArgs) ([]openTypes.RouteSet
 	c.client.SetHeader(c.headers)
 	c.client.SetUrlQuery("", action)
 	c.client.SetMethod(kopHttp.GET)
-	c.client.SetSigner(defautlServerName, c.conf.Region, aksk.AK, aksk.SK)
+	c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
 	data, err := c.client.Go()
 	if err != nil {
 		if strings.Contains(err.Error(), "SecurityTokenExpired") {
@@ -251,7 +251,7 @@ func (c *RouteClient) GetRoutes(args *openTypes.RouteArgs) ([]openTypes.RouteSet
 			if len(aksk.SecurityToken) != 0 {
 				c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
 			}
-			c.client.SetSigner(defautlServerName, c.conf.Region, aksk.AK, aksk.SK)
+			c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
 			data, err = c.client.Go()
 			if err != nil {
 				return nil, fmt.Errorf("retry kop get routes %v after reloading aksk err: %v", args, err)
@@ -291,7 +291,7 @@ func (c *RouteClient) GetRoute(id string) (*openTypes.RouteSetType, error) {
 	c.client.SetHeader(c.headers)
 	c.client.SetUrlQuery("", action)
 	c.client.SetMethod(kopHttp.GET)
-	c.client.SetSigner(defautlServerName, c.conf.Region, aksk.AK, aksk.SK)
+	c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
 	data, err := c.client.Go()
 	if err != nil {
 		if strings.Contains(err.Error(), "SecurityTokenExpired") {
@@ -302,7 +302,7 @@ func (c *RouteClient) GetRoute(id string) (*openTypes.RouteSetType, error) {
 			if len(aksk.SecurityToken) != 0 {
 				c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
 			}
-			c.client.SetSigner(defautlServerName, c.conf.Region, aksk.AK, aksk.SK)
+			c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
 			data, err = c.client.Go()
 			if err != nil {
 				return nil, fmt.Errorf("retry kop get route %v after reloading aksk err: %v", id, err)
