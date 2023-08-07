@@ -8,13 +8,13 @@ import (
 	"golang.org/x/net/context"
 	log "k8s.io/klog/v2"
 
-	openstack_client "newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
-	openstackTypes "newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/model"
+	openstack_client "ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client"
+	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
+	openstackTypes "ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
+	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/model"
 
-	"newgit.op.ksyun.com/kce/aksk-provider/env"
-	"newgit.op.ksyun.com/kce/aksk-provider/file"
+	"ezone.ksyun.com/code/kce/aksk-provider/env"
+	"ezone.ksyun.com/code/kce/aksk-provider/file"
 )
 
 const (
@@ -25,6 +25,28 @@ const (
 var (
 	DefaultCipherKey string
 )
+
+func GetInstanceIdFromIP(ctx context.Context, cfg *config.Config, privateIP string) (string, error) {
+	s, err := openstack_client.Server(ctx, cfg)
+	if err != nil {
+		return "", err
+	}
+
+	getInstances := &openstackTypes.InstanceArgs{
+		DomainId:          cfg.VpcID,
+		InstanceType:      defaultRouteType,
+		InstancePrivateIP: privateIP,
+	}
+
+	log.Infof("Check ksc nova instance args: %v \n", getInstances)
+
+	result, err := s.DescribeInstances(getInstances)
+	if err != nil {
+		log.Errorf("Error get instance %s: %s .\n", privateIP, getErrorString(err))
+		return "", err
+	}
+	return result.Id, nil
+}
 
 func ListRoutes(ctx context.Context, cfg *config.Config) ([]*model.Route, error) {
 	var result []*model.Route

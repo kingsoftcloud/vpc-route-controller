@@ -11,10 +11,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
-	ctrlCfg "newgit.op.ksyun.com/kce/vpc-route-controller/pkg/config"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/controller"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/version"
+	ctrlCfg "ezone.ksyun.com/code/kce/vpc-route-controller/pkg/config"
+	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/controller"
+	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun"
+	"ezone.ksyun.com/code/kce/vpc-route-controller/version"
 )
 
 var log = klogr.New()
@@ -35,7 +35,7 @@ func main() {
 
 	printVersion()
 
-    conf, err := ksyun.GetNeutronConfig()
+	conf, err := ksyun.GetNeutronConfig()
 	if err != nil {
 		log.Error(err, "failed to get neutron config")
 		os.Exit(1)

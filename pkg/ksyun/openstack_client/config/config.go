@@ -1,8 +1,8 @@
 package config
 
 import (
+	prvd "ezone.ksyun.com/code/kce/aksk-provider"
 	"k8s.io/apimachinery/pkg/util/wait"
-	prvd "newgit.op.ksyun.com/kce/aksk-provider"
 )
 
 var (

@@ -2,10 +2,15 @@ package openstack_client
 
 import (
 	"context"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/neutron"
+	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
+	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/neutron"
+	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/nova"
 )
 
 func Route(ctx context.Context, conf *config.Config) (*neutron.RouteClient, error) {
 	return neutron.NewRouteClient(ctx, conf)
+}
+
+func Server(ctx context.Context, conf *config.Config) (*nova.ServerClient, error) {
+	return nova.NewServerClient(ctx, conf)
 }

@@ -21,10 +21,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	"time"
 
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/controller/helper"
-	openstackCfg "newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/model"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/util/metric"
+	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/controller/helper"
+	openstackCfg "ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
+	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/model"
+	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/util/metric"
 )
 
 const (
@@ -128,7 +128,6 @@ func (r *ReconcileRoute) Reconcile(ctx context.Context, request reconcile.Reques
 				if route, ok := o.(*model.Route); ok {
 					start := time.Now()
 					var errList []error
-					klog.Infof("=================== %#v", route)
 					if err = deleteRouteForInstance(ctx, r.neutronConfig, route.DestinationCIDR); err != nil {
 						errList = append(errList, err)
 						klog.Errorf("error delete route entry for delete node %s route %v, error: %v", request.Name, route, err)
@@ -193,7 +192,7 @@ func (r *ReconcileRoute) syncCloudRoute(ctx context.Context, node *corev1.Node) 
 
 func (r *ReconcileRoute) addRouteForNode(ctx context.Context, ipv4Cidr string, node *corev1.Node, cachedRouteEntry []*model.Route) error {
 	var err error
-	instanceId := getNodeInstanceId(node.Annotations)
+	instanceId := getNodeInstanceId(ctx, r.neutronConfig, node)
 	if len(instanceId) == 0 {
 		return fmt.Errorf("cannot find instance uuid.")
 	}

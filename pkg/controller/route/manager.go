@@ -12,10 +12,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/controller/helper"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun"
-	neutronCfg "newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
-	"newgit.op.ksyun.com/kce/vpc-route-controller/pkg/model"
+	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/controller/helper"
+	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun"
+	neutronCfg "ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
+	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/model"
 )
 
 var (
@@ -81,7 +81,7 @@ func (r *ReconcileRoute) syncRoutes(ctx context.Context, conf *neutronCfg.Config
 	}
 
 	for _, route := range routes {
-		if conflictWithNodes(route, nodes) {
+		if conflictWithNodes(ctx, r.neutronConfig, route, nodes) {
 			if err = deleteRouteForInstance(ctx, conf, route.DestinationCIDR); err != nil {
 				klog.Errorf("Could not delete conflict route %s %s, %s", route.Name, route.DestinationCIDR, err.Error())
 				continue
@@ -112,7 +112,7 @@ func (r *ReconcileRoute) syncRoutes(ctx context.Context, conf *neutronCfg.Config
 	return nil
 }
 
-func conflictWithNodes(route *model.Route, nodes *v1.NodeList) bool {
+func conflictWithNodes(ctx context.Context, cfg *neutronCfg.Config, route *model.Route, nodes *v1.NodeList) bool {
 	for _, node := range nodes.Items {
 		ipv4Cidr, _, err := getIPv4RouteForNode(&node)
 		if err != nil {
@@ -127,7 +127,7 @@ func conflictWithNodes(route *model.Route, nodes *v1.NodeList) bool {
 			klog.Errorf("error get conflict state from node: %v and route: %v", node.Name, route)
 			continue
 		}
-		instanceId := getNodeInstanceId(node.Annotations)
+		instanceId := getNodeInstanceId(ctx, cfg, &node)
 		if contains || (equal && route.InstanceId != instanceId) {
 			klog.Warningf("conflict route with node %v(%v) found, route: %+v", node.Name, ipv4Cidr, route)
 			return true
@@ -237,13 +237,25 @@ func (r *ReconcileRoute) NodeList() (*v1.NodeList, error) {
 	return nodes, nil
 }
 
-func getNodeInstanceId(annotations map[string]string) string {
+func getNodeInstanceId(ctx context.Context, cfg *neutronCfg.Config, node *v1.Node) string {
+	annotations := node.Annotations
 	if _, ok := annotations["appengine.sdns.ksyun.com/instance-uuid"]; ok {
 		return annotations["appengine.sdns.ksyun.com/instance-uuid"]
 	}
 
 	if _, ok := annotations["kce.sdns.ksyun.com/instanceId"]; ok {
 		return annotations["kce.sdns.ksyun.com/instanceId"]
+	}
+
+	for _, addr := range node.Status.Addresses {
+		if addr.Type == "InternalIP" {
+			nodeIP := addr.Address
+			instanceId, err := ksyun.GetInstanceIdFromIP(ctx, cfg, nodeIP)
+			if err != nil {
+				return ""
+			}
+			return instanceId
+		}
 	}
 
 	return ""

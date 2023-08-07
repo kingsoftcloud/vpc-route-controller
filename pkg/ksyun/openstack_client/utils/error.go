@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	openTypes "newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
+	openTypes "ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
 )
 
 type ErrorResponse struct {

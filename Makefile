@@ -10,12 +10,12 @@ VERSION := latest
 BJKSYUNREPOSITORY:= hub.kce.ksyun.com/ksyun/vpc-route-controller
 
 # ldflags
-VERSION_PKG=newgit.op.ksyun.com/kce/vpc-route-controller/version
+VERSION_PKG=ezone.ksyun.com/code/kce/vpc-route-controller/version
 GIT_COMMIT=$(shell git rev-parse HEAD)
 BUILD_DATE=$(shell date +%Y-%m-%dT%H:%M:%S%z)
 
 CIPHER_KEY=$(shell echo "8cca0smDmR478v8F")
-KSYUN_PKG=newgit.op.ksyun.com/kce/vpc-route-controller/pkg/ksyun
+KSYUN_PKG=ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun
 
 ldflags="-s -w -X ${KSYUN_PKG}.DefaultCipherKey=${CIPHER_KEY} -X $(VERSION_PKG).Version=$(VERSION) -X $(VERSION_PKG).GitCommit=${GIT_COMMIT} -X ${VERSION_PKG}.BuildDate=${BUILD_DATE}"
 
