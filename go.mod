@@ -2,8 +2,6 @@ module ezone.ksyun.com/code/kce/vpc-route-controller
 
 go 1.19
 
-replace ezone.ksyun.com/code/kce/aksk-provider => ../aksk-provider
-
 require (
 	ezone.ksyun.com/code/kce/aksk-provider v1.0.0
 	github.com/avast/retry-go/v4 v4.3.4
