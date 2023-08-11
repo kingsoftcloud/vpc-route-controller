@@ -9,10 +9,10 @@ import (
 	"strings"
 	"sync"
 
-	prvd "ezone.ksyun.com/code/kce/aksk-provider"
-	kopHttp "ezone.ksyun.com/code/kce/vpc-route-controller/pkg/http"
-	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
-	openTypes "ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
+	prvd "ezone.ksyun.com/ezone/kce/aksk-provider"
+	kopHttp "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/http"
+	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
+	openTypes "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
 )
 
 const (

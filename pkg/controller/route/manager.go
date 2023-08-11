@@ -12,10 +12,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 
-	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/controller/helper"
-	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun"
-	neutronCfg "ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
-	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/model"
+	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/controller/helper"
+	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun"
+	neutronCfg "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
+	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/model"
 )
 
 var (

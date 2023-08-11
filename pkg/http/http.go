@@ -21,8 +21,8 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	"k8s.io/klog"
-	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/util"
-	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/util/random"
+	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/util"
+	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/util/random"
 )
 
 const (
