@@ -8,13 +8,13 @@ import (
 	"golang.org/x/net/context"
 	log "k8s.io/klog/v2"
 
-	openstack_client "ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client"
-	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
-	openstackTypes "ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
-	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/model"
+	openstack_client "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client"
+	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
+	openstackTypes "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
+	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/model"
 
-	"ezone.ksyun.com/code/kce/aksk-provider/env"
-	"ezone.ksyun.com/code/kce/aksk-provider/file"
+	"ezone.ksyun.com/ezone/kce/aksk-provider/env"
+	"ezone.ksyun.com/ezone/kce/aksk-provider/file"
 )
 
 const (

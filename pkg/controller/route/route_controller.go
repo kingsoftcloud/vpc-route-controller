@@ -21,10 +21,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	"time"
 
-	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/controller/helper"
-	openstackCfg "ezone.ksyun.com/code/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
-	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/model"
-	"ezone.ksyun.com/code/kce/vpc-route-controller/pkg/util/metric"
+	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/controller/helper"
+	openstackCfg "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
+	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/model"
+	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/util/metric"
 )
 
 const (
