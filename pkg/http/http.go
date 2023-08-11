@@ -15,14 +15,14 @@ import (
 	"strings"
 	"time"
 
+	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/util"
+	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/util/random"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	"k8s.io/klog"
-	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/util"
-	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/util/random"
 )
 
 const (

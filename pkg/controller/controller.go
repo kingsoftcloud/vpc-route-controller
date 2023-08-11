@@ -1,9 +1,9 @@
 package controller
 
 import (
-	"fmt"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/controller/route"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
+	"fmt"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 

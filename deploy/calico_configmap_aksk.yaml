@@ -627,7 +627,7 @@ data:
       "region": "___REGION___",
       "vpc_id": "___VPC_ID___",
       "network_endpoint": "http://internal.api.ksyun.com",
-      "aksk_type": "configmap"
+      "aksk_type": "file"
     }
 ---
 
@@ -706,7 +706,7 @@ spec:
         - name: cni
           mountPath: /etc/cni/net.d
         - name: aksk
-          mountPath: /etc/aksk
+          mountPath: /var/lib/aksk
       tolerations:
         # Make sure canal gets scheduled on all nodes.
         - operator: Exists
