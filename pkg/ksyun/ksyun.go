@@ -43,6 +43,18 @@ func GetInstanceIdFromIP(ctx context.Context, cfg *config.Config, privateIP stri
 	result, err := s.DescribeInstances(getInstances)
 	if err != nil {
 		log.Errorf("Error get instance %s: %s .\n", privateIP, getErrorString(err))
+		mesg := openstackTypes.NotifyMessage{
+			Name:     "GetInstanceIdFromIP",
+			Priority: "2",
+			NoDeal:   "1",
+			Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", cfg.Region, cfg.ClusterUUID, err.Error()),
+		}
+
+		var mesgs []openstackTypes.NotifyMessage
+		mesgs = append(mesgs, mesg)
+		n := openstack_client.Notifier()
+		n.Notify(ctx, mesgs)
+
 		return "", err
 	}
 	return result.Id, nil
@@ -65,6 +77,19 @@ func ListRoutes(ctx context.Context, cfg *config.Config) ([]*model.Route, error)
 	routes, err := r.ListRoutes(getRoutes)
 	if err != nil {
 		log.Errorf("Error CheckRouteEntry: %s .\n", getErrorString(err))
+
+		mesg := openstackTypes.NotifyMessage{
+			Name:     "ListRoutes",
+			Priority: "2",
+			NoDeal:   "1",
+			Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", cfg.Region, cfg.ClusterUUID, err.Error()),
+		}
+
+		var mesgs []openstackTypes.NotifyMessage
+		mesgs = append(mesgs, mesg)
+		n := openstack_client.Notifier()
+		n.Notify(ctx, mesgs)
+
 		return result, err
 	}
 
@@ -101,6 +126,18 @@ func FindRoute(ctx context.Context, cfg *config.Config, cidr string) (*model.Rou
 	routes, err := r.GetRoutes(getRoutes)
 	if err != nil {
 		log.Errorf("Error CheckRouteEntry: %s .\n", getErrorString(err))
+		mesg := openstackTypes.NotifyMessage{
+			Name:     "FindRoute",
+			Priority: "2",
+			NoDeal:   "1",
+			Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", cfg.Region, cfg.ClusterUUID, err.Error()),
+		}
+
+		var mesgs []openstackTypes.NotifyMessage
+		mesgs = append(mesgs, mesg)
+		n := openstack_client.Notifier()
+		n.Notify(ctx, mesgs)
+
 		return nil, err
 	}
 
@@ -130,6 +167,19 @@ func DeleteRoute(ctx context.Context, cfg *config.Config, cidr string) error {
 		log.Infof("vpc id %s delete route id: %s", cfg.VpcID, route.RouteId)
 		if err := r.DeleteRoute(route.RouteId); err != nil {
 			log.Errorf("Error deleteRoute: %s . \n", getErrorString(err))
+
+			mesg := openstackTypes.NotifyMessage{
+				Name:     "DeleteRoute",
+				Priority: "2",
+				NoDeal:   "1",
+				Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", cfg.Region, cfg.ClusterUUID, err.Error()),
+			}
+
+			var mesgs []openstackTypes.NotifyMessage
+			mesgs = append(mesgs, mesg)
+			n := openstack_client.Notifier()
+			n.Notify(ctx, mesgs)
+
 			return fmt.Errorf("Error deleteRoute: %s . \n", getErrorString(err))
 		}
 	}
@@ -154,6 +204,18 @@ func CreateRoute(ctx context.Context, cfg *config.Config, instanceId, cidr strin
 
 	id, err := r.CreateRoute(createRoute)
 	if err != nil {
+		mesg := openstackTypes.NotifyMessage{
+			Name:     "CreateRoute",
+			Priority: "2",
+			NoDeal:   "1",
+			Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", cfg.Region, cfg.ClusterUUID, err.Error()),
+		}
+
+		var mesgs []openstackTypes.NotifyMessage
+		mesgs = append(mesgs, mesg)
+		n := openstack_client.Notifier()
+		n.Notify(ctx, mesgs)
+
 		return fmt.Errorf("Error createRoute: %s . \n", getErrorString(err))
 	}
 
