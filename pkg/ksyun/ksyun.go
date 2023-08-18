@@ -97,11 +97,16 @@ func ListRoutes(ctx context.Context, cfg *config.Config) ([]*model.Route, error)
 		if r.DestinationCIDR == "0.0.0.0/0" {
 			continue
 		}
+
+		gatewayId := ""
+		if  len(r.NextHopset) != 0 {
+			gatewayId = r.NextHopset[0].GatewayId
+		}
 		m := &model.Route{
 			Name:            fmt.Sprintf("%s-%s", r.RouteId, r.DestinationCIDR),
 			DestinationCIDR: r.DestinationCIDR,
 			RouteId:         r.RouteId,
-			InstanceId:      r.NextHopset[0].GatewayId,
+			InstanceId:      gatewayId,
 		}
 
 		result = append(result, m)
