@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	prvd "ezone.ksyun.com/ezone/kce/aksk-provider"
+	prvd "github.com/kingsoftcloud/aksk-provider"
 	kopHttp "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/http"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
 	openTypes "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
@@ -232,7 +232,7 @@ func (c *RouteClient) GetRoutes(args *openTypes.RouteArgs) ([]openTypes.RouteSet
 		"Filter.3.Name":    []string{"destination-cidr-block"},
 		"Filter.3.Value.1": []string{args.CidrBlock},
 	}
-	klog.Infof("get neutron route : %s", c.conf.NetworkEndpoint)
+	klog.V(9).Infof("get neutron route : %s", c.conf.NetworkEndpoint)
 	if len(aksk.SecurityToken) != 0 {
 		c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
 	}
