@@ -13,8 +13,8 @@ import (
 	openstackTypes "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/model"
 
-	"ezone.ksyun.com/ezone/kce/aksk-provider/env"
-	"ezone.ksyun.com/ezone/kce/aksk-provider/file"
+	"github.com/kingsoftcloud/aksk-provider/env"
+	"github.com/kingsoftcloud/aksk-provider/file"
 )
 
 const (
@@ -38,7 +38,7 @@ func GetInstanceIdFromIP(ctx context.Context, cfg *config.Config, privateIP stri
 		InstancePrivateIP: privateIP,
 	}
 
-	log.Infof("Check ksc nova instance args: %v \n", getInstances)
+	log.V(9).Infof("Check ksc nova instance args: %v \n", getInstances)
 
 	result, err := s.DescribeInstances(getInstances)
 	if err != nil {

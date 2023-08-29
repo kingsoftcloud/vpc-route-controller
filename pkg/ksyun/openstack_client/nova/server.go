@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"k8s.io/klog"
+	log "k8s.io/klog/v2"
 	"net/url"
 	"strings"
 	"sync"
 
-	prvd "ezone.ksyun.com/ezone/kce/aksk-provider"
+	prvd "github.com/kingsoftcloud/aksk-provider"
 	kopHttp "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/http"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
 	openTypes "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
@@ -69,7 +69,9 @@ func (n *ServerClient) DescribeInstances(args *openTypes.InstanceArgs) (*openTyp
 		"Filter.2.Name":    []string{"private-ip-address"},
 		"Filter.2.Value.1": []string{args.InstancePrivateIP},
 	}
-	klog.Infof("get nova instance: %s", n.conf.NetworkEndpoint)
+
+	log.V(9).Infof("get nova instance: %s", n.conf.NetworkEndpoint)
+
 	if len(aksk.SecurityToken) != 0 {
 		n.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
 	}

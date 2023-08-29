@@ -1,7 +1,7 @@
 package config
 
 import (
-	prvd "ezone.ksyun.com/ezone/kce/aksk-provider"
+	prvd "github.com/kingsoftcloud/aksk-provider"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
