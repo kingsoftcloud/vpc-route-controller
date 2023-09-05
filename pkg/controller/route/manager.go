@@ -246,6 +246,11 @@ func getNodeInstanceId(ctx context.Context, node *v1.Node) string {
 		return annotations["kce.sdns.ksyun.com/instanceId"]
 	}
 
+	if node.Spec.ProviderID != "" {
+		return node.Spec.ProviderID
+	}
+
+	/*
 	for _, addr := range node.Status.Addresses {
 		if addr.Type == "InternalIP" {
 			nodeIP := addr.Address
@@ -255,7 +260,7 @@ func getNodeInstanceId(ctx context.Context, node *v1.Node) string {
 			}
 			return instanceId
 		}
-	}
+	}*/
 
 	return ""
 }
