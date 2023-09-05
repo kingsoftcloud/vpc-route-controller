@@ -100,10 +100,16 @@ func (n *ServerClient) DescribeInstances(args *openTypes.InstanceArgs) (*openTyp
 		}
 	}
 
+
 	response := new(openTypes.GetInstancesResponse)
 	err = json.Unmarshal(data, response)
 	if err != nil {
 		return nil, fmt.Errorf("json unmarshal %s err: %v", data, err)
 	}
+
+	if len(response.InstancesSet) == 0 {
+		return nil, fmt.Errorf("kop get instance %v err: not found", args)
+	}
+
 	return &(response.InstancesSet[0]), nil
 }
