@@ -13,7 +13,6 @@ import (
 
 	ctrlCfg "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/config"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/controller"
-	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/version"
 )
 
@@ -35,12 +34,6 @@ func main() {
 
 	printVersion()
 
-	conf, err := ksyun.GetNeutronConfig()
-	if err != nil {
-		log.Error(err, "failed to get neutron config")
-		os.Exit(1)
-	}
-
 	// Get a config to talk to the api-server
 	cfg := config.GetConfigOrDie()
 	cfg.QPS = ctrlCfg.ControllerCFG.RuntimeConfig.QPS
@@ -56,7 +49,7 @@ func main() {
 	}
 
 	log.Info("Registering Components.")
-	if err := controller.AddToManager(mgr, ctrlCfg.ControllerCFG.Controllers, conf); err != nil {
+	if err := controller.AddToManager(mgr, ctrlCfg.ControllerCFG.Controllers); err != nil {
 		log.Error(err, "add controller: %s", err.Error())
 		os.Exit(1)
 	} else {

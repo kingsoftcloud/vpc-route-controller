@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/controller/helper"
-	openstackCfg "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/model"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/util/metric"
 )
@@ -32,12 +31,12 @@ const (
 	defaultRouteReconciliationPeriod = 5 * time.Minute
 )
 
-func Add(mgr manager.Manager, cfg *openstackCfg.Config) error {
-	return add(mgr, newReconciler(mgr, cfg))
+func Add(mgr manager.Manager) error {
+	return add(mgr, newReconciler(mgr))
 }
 
 // newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager, cfg *openstackCfg.Config) *ReconcileRoute {
+func newReconciler(mgr manager.Manager) *ReconcileRoute {
 	recon := &ReconcileRoute{
 		client:          mgr.GetClient(),
 		scheme:          mgr.GetScheme(),
@@ -45,7 +44,6 @@ func newReconciler(mgr manager.Manager, cfg *openstackCfg.Config) *ReconcileRout
 		nodeCache:       cmap.New(),
 		configRoutes:    true,
 		reconcilePeriod: defaultRouteReconciliationPeriod,
-		neutronConfig:   cfg,
 	}
 	return recon
 }
@@ -110,8 +108,6 @@ type ReconcileRoute struct {
 
 	//record event recorder
 	record record.EventRecorder
-
-	neutronConfig *openstackCfg.Config
 }
 
 func (r *ReconcileRoute) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
@@ -128,7 +124,7 @@ func (r *ReconcileRoute) Reconcile(ctx context.Context, request reconcile.Reques
 				if route, ok := o.(*model.Route); ok {
 					start := time.Now()
 					var errList []error
-					if err = deleteRouteForInstance(ctx, r.neutronConfig, route.DestinationCIDR); err != nil {
+					if err = deleteRouteForInstance(ctx, route.DestinationCIDR); err != nil {
 						errList = append(errList, err)
 						klog.Errorf("error delete route entry for delete node %s route %v, error: %v", request.Name, route, err)
 					} else {
@@ -192,7 +188,7 @@ func (r *ReconcileRoute) syncCloudRoute(ctx context.Context, node *corev1.Node) 
 
 func (r *ReconcileRoute) addRouteForNode(ctx context.Context, ipv4Cidr string, node *corev1.Node, cachedRouteEntry []*model.Route) error {
 	var err error
-	instanceId := getNodeInstanceId(ctx, r.neutronConfig, node)
+	instanceId := getNodeInstanceId(ctx, node)
 	if len(instanceId) == 0 {
 		return fmt.Errorf("cannot find instance uuid.")
 	}
@@ -203,7 +199,7 @@ func (r *ReconcileRoute) addRouteForNode(ctx context.Context, ipv4Cidr string, n
 		Namespace: "",
 	}
 
-	route, findErr := findRoute(ctx, r.neutronConfig, ipv4Cidr, cachedRouteEntry)
+	route, findErr := findRoute(ctx, ipv4Cidr, cachedRouteEntry)
 	if findErr != nil {
 		klog.Errorf("error found exist route for instance: %v, %v", nodeRef.UID, findErr)
 		r.record.Event(
@@ -219,7 +215,7 @@ func (r *ReconcileRoute) addRouteForNode(ctx context.Context, ipv4Cidr string, n
 	if route == nil || route.DestinationCIDR != ipv4Cidr {
 		klog.Infof("create routes for node %s: %v - %v", node.Name, nodeRef.UID, ipv4Cidr)
 		start := time.Now()
-		route, err = createRouteForInstance(ctx, r.neutronConfig, string(nodeRef.UID), ipv4Cidr)
+		route, err = createRouteForInstance(ctx, string(nodeRef.UID), ipv4Cidr)
 		if err != nil {
 			klog.Errorf("error create route for node %v : instance id [%v], err: %s", node.Name, nodeRef.UID, err.Error())
 			r.record.Event(
@@ -314,7 +310,7 @@ func (r *ReconcileRoute) reconcileForCluster() {
 	}
 
 	// Sync for nodes
-	if err := r.syncRoutes(ctx, r.neutronConfig, nodes); err != nil {
+	if err := r.syncRoutes(ctx, nodes); err != nil {
 		klog.Errorf("sync route error: %s", err.Error())
 	}
 

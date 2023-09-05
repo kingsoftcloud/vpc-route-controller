@@ -14,7 +14,6 @@ import (
 
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/controller/helper"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun"
-	neutronCfg "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/model"
 )
 
@@ -29,7 +28,7 @@ var (
 	routeLock = sync.Mutex{}
 )
 
-func createRouteForInstance(ctx context.Context, conf *neutronCfg.Config, instanceId, cidr string) (
+func createRouteForInstance(ctx context.Context, instanceId, cidr string) (
 	*model.Route, error,
 ) {
 	routeLock.Lock()
@@ -40,10 +39,10 @@ func createRouteForInstance(ctx context.Context, conf *neutronCfg.Config, instan
 		findErr  error
 	)
 	err := wait.ExponentialBackoff(createBackoff, func() (bool, error) {
-		innerErr = ksyun.CreateRoute(ctx, conf, instanceId, cidr)
+		innerErr = ksyun.CreateRoute(ctx, instanceId, cidr)
 		if innerErr != nil {
 			if strings.Contains(innerErr.Error(), "same with a route") {
-				route, findErr = ksyun.FindRoute(ctx, conf, cidr)
+				route, findErr = ksyun.FindRoute(ctx, cidr)
 				if findErr == nil && route != nil {
 					return true, nil
 				}
@@ -62,27 +61,27 @@ func createRouteForInstance(ctx context.Context, conf *neutronCfg.Config, instan
 	}
 
 	if route == nil {
-		route, _ = ksyun.FindRoute(ctx, conf, cidr)
+		route, _ = ksyun.FindRoute(ctx, cidr)
 	}
 
 	return route, nil
 }
 
-func deleteRouteForInstance(ctx context.Context, conf *neutronCfg.Config, cidr string) error {
+func deleteRouteForInstance(ctx context.Context, cidr string) error {
 	routeLock.Lock()
 	defer routeLock.Unlock()
-	return ksyun.DeleteRoute(ctx, conf, cidr)
+	return ksyun.DeleteRoute(ctx, cidr)
 }
 
-func (r *ReconcileRoute) syncRoutes(ctx context.Context, conf *neutronCfg.Config, nodes *v1.NodeList) error {
-	routes, err := ksyun.ListRoutes(ctx, conf)
+func (r *ReconcileRoute) syncRoutes(ctx context.Context, nodes *v1.NodeList) error {
+	routes, err := ksyun.ListRoutes(ctx)
 	if err != nil {
 		return fmt.Errorf("error listing routes: %v", err)
 	}
 
 	for _, route := range routes {
-		if conflictWithNodes(ctx, r.neutronConfig, route, nodes) {
-			if err = deleteRouteForInstance(ctx, conf, route.DestinationCIDR); err != nil {
+		if conflictWithNodes(ctx, route, nodes) {
+			if err = deleteRouteForInstance(ctx, route.DestinationCIDR); err != nil {
 				klog.Errorf("Could not delete conflict route %s %s, %s", route.Name, route.DestinationCIDR, err.Error())
 				continue
 			}
@@ -112,7 +111,7 @@ func (r *ReconcileRoute) syncRoutes(ctx context.Context, conf *neutronCfg.Config
 	return nil
 }
 
-func conflictWithNodes(ctx context.Context, cfg *neutronCfg.Config, route *model.Route, nodes *v1.NodeList) bool {
+func conflictWithNodes(ctx context.Context, route *model.Route, nodes *v1.NodeList) bool {
 	for _, node := range nodes.Items {
 		ipv4Cidr, _, err := getIPv4RouteForNode(&node)
 		if err != nil {
@@ -127,7 +126,7 @@ func conflictWithNodes(ctx context.Context, cfg *neutronCfg.Config, route *model
 			klog.Errorf("error get conflict state from node: %v and route: %v", node.Name, route)
 			continue
 		}
-		instanceId := getNodeInstanceId(ctx, cfg, &node)
+		instanceId := getNodeInstanceId(ctx, &node)
 		if contains || (equal && route.InstanceId != instanceId) {
 			klog.Warningf("conflict route with node %v(%v) found, route: %+v", node.Name, ipv4Cidr, route)
 			return true
@@ -137,7 +136,7 @@ func conflictWithNodes(ctx context.Context, cfg *neutronCfg.Config, route *model
 	return false
 }
 
-func findRoute(ctx context.Context, conf *neutronCfg.Config, cidr string, cachedRoutes []*model.Route) (*model.Route, error) {
+func findRoute(ctx context.Context, cidr string, cachedRoutes []*model.Route) (*model.Route, error) {
 	if cidr == "" {
 		return nil, fmt.Errorf("empty query condition")
 	}
@@ -151,7 +150,7 @@ func findRoute(ctx context.Context, conf *neutronCfg.Config, cidr string, cached
 		}
 		return nil, nil
 	}
-	return ksyun.FindRoute(ctx, conf, cidr)
+	return ksyun.FindRoute(ctx, cidr)
 }
 
 func containsRoute(outside *net.IPNet, insideRoute string) (containsEqual bool, realContains bool, err error) {
@@ -237,7 +236,7 @@ func (r *ReconcileRoute) NodeList() (*v1.NodeList, error) {
 	return nodes, nil
 }
 
-func getNodeInstanceId(ctx context.Context, cfg *neutronCfg.Config, node *v1.Node) string {
+func getNodeInstanceId(ctx context.Context, node *v1.Node) string {
 	annotations := node.Annotations
 	if _, ok := annotations["appengine.sdns.ksyun.com/instance-uuid"]; ok {
 		return annotations["appengine.sdns.ksyun.com/instance-uuid"]
@@ -250,7 +249,7 @@ func getNodeInstanceId(ctx context.Context, cfg *neutronCfg.Config, node *v1.Nod
 	for _, addr := range node.Status.Addresses {
 		if addr.Type == "InternalIP" {
 			nodeIP := addr.Address
-			instanceId, err := ksyun.GetInstanceIdFromIP(ctx, cfg, nodeIP)
+			instanceId, err := ksyun.GetInstanceIdFromIP(ctx, nodeIP)
 			if err != nil {
 				return ""
 			}
