@@ -38,13 +38,19 @@ func (sp *predicateForNodeEvent) Update(e event.UpdateEvent) bool {
 		}
 
 		if oldNode.UID != newNode.UID {
-			klog.Infof("node changed: %s UIDChanged: %v - %v", oldNode.Name, oldNode.UID, newNode.UID)
+			klog.Infof("node changed: %s UID Changed: %v - %v", oldNode.Name, oldNode.UID, newNode.UID)
 			return true
 		}
 		if oldNode.Spec.PodCIDR != newNode.Spec.PodCIDR {
 			klog.Infof("node changed: %s Pod CIDR Changed: %v - %v", oldNode.Name, oldNode.Spec.PodCIDR, newNode.Spec.PodCIDR)
 			return true
 		}
+
+		if oldNode.Spec.ProviderID != newNode.Spec.ProviderID {
+			klog.Infof("node changed: % Pod ProviderID Changed: %v - %v", oldNode.Name, oldNode.Spec.ProviderID, newNode.Spec.ProviderID)
+			return true
+		}
+
 		if !reflect.DeepEqual(oldNode.Spec.PodCIDRs, newNode.Spec.PodCIDRs) {
 			klog.Infof("node changed: %s Pod CIDRs Changed: %v - %v", oldNode.Name, oldNode.Spec.PodCIDRs, newNode.Spec.PodCIDRs)
 			return true
