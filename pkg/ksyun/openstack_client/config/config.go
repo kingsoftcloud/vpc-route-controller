@@ -38,6 +38,8 @@ type Config struct {
 	AkskFilePath  string            `json:"aksk_file_path"`
 	Encrypt       bool              `json:"encrypt"`
 
+	InstanceIdFrom string `json:"instance_id_from"`
+
 	RequestIdPrefix string `json:"requestIdPrefix"`
 
 	// http client headers

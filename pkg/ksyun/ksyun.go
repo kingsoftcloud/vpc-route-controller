@@ -24,16 +24,26 @@ const (
 
 var (
 	DefaultCipherKey string
+	Cfg              *config.Config
+	err              error
 )
 
-func GetInstanceIdFromIP(ctx context.Context, cfg *config.Config, privateIP string) (string, error) {
-	s, err := openstack_client.Server(ctx, cfg)
+func init() {
+	Cfg, err = GetNeutronConfig()
+	if err != nil {
+		log.Error(err, "failed to get neutron config")
+		os.Exit(1)
+	}
+}
+
+func GetInstanceIdFromIP(ctx context.Context, privateIP string) (string, error) {
+	s, err := openstack_client.Server(ctx, Cfg)
 	if err != nil {
 		return "", err
 	}
 
 	getInstances := &openstackTypes.InstanceArgs{
-		DomainId:          cfg.VpcID,
+		DomainId:          Cfg.VpcID,
 		InstanceType:      defaultRouteType,
 		InstancePrivateIP: privateIP,
 	}
@@ -47,7 +57,7 @@ func GetInstanceIdFromIP(ctx context.Context, cfg *config.Config, privateIP stri
 			Name:     "GetInstanceIdFromIP",
 			Priority: "2",
 			NoDeal:   "1",
-			Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", cfg.Region, cfg.ClusterUUID, err.Error()),
+			Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
 		}
 
 		var mesgs []openstackTypes.NotifyMessage
@@ -60,15 +70,15 @@ func GetInstanceIdFromIP(ctx context.Context, cfg *config.Config, privateIP stri
 	return result.Id, nil
 }
 
-func ListRoutes(ctx context.Context, cfg *config.Config) ([]*model.Route, error) {
+func ListRoutes(ctx context.Context) ([]*model.Route, error) {
 	var result []*model.Route
-	r, err := openstack_client.Route(ctx, cfg)
+	r, err := openstack_client.Route(ctx, Cfg)
 	if err != nil {
 		return result, err
 	}
 
 	getRoutes := &openstackTypes.RouteArgs{
-		DomainId:     cfg.VpcID,
+		DomainId:     Cfg.VpcID,
 		InstanceType: defaultRouteType,
 	}
 
@@ -82,7 +92,7 @@ func ListRoutes(ctx context.Context, cfg *config.Config) ([]*model.Route, error)
 			Name:     "ListRoutes",
 			Priority: "2",
 			NoDeal:   "1",
-			Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", cfg.Region, cfg.ClusterUUID, err.Error()),
+			Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
 		}
 
 		var mesgs []openstackTypes.NotifyMessage
@@ -99,7 +109,7 @@ func ListRoutes(ctx context.Context, cfg *config.Config) ([]*model.Route, error)
 		}
 
 		gatewayId := ""
-		if  len(r.NextHopset) != 0 {
+		if len(r.NextHopset) != 0 {
 			gatewayId = r.NextHopset[0].GatewayId
 		}
 		m := &model.Route{
@@ -114,14 +124,14 @@ func ListRoutes(ctx context.Context, cfg *config.Config) ([]*model.Route, error)
 	return result, nil
 }
 
-func FindRoute(ctx context.Context, cfg *config.Config, cidr string) (*model.Route, error) {
-	r, err := openstack_client.Route(ctx, cfg)
+func FindRoute(ctx context.Context, cidr string) (*model.Route, error) {
+	r, err := openstack_client.Route(ctx, Cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	getRoutes := &openstackTypes.RouteArgs{
-		DomainId:     cfg.VpcID,
+		DomainId:     Cfg.VpcID,
 		InstanceType: defaultRouteType,
 		CidrBlock:    cidr,
 	}
@@ -135,7 +145,7 @@ func FindRoute(ctx context.Context, cfg *config.Config, cidr string) (*model.Rou
 			Name:     "FindRoute",
 			Priority: "2",
 			NoDeal:   "1",
-			Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", cfg.Region, cfg.ClusterUUID, err.Error()),
+			Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
 		}
 
 		var mesgs []openstackTypes.NotifyMessage
@@ -150,26 +160,31 @@ func FindRoute(ctx context.Context, cfg *config.Config, cidr string) (*model.Rou
 		return nil, nil
 	}
 
+	gatewayId := ""
+	if len(routes[0].NextHopset) != 0 {
+		gatewayId = routes[0].NextHopset[0].GatewayId
+	}
+
 	return &model.Route{
 		Name:            fmt.Sprintf("%s-%s", routes[0].RouteId, routes[0].DestinationCIDR),
 		DestinationCIDR: routes[0].DestinationCIDR,
 		RouteId:         routes[0].RouteId,
-		InstanceId:      routes[0].NextHopset[0].GatewayId,
+		InstanceId:      gatewayId,
 	}, nil
 }
 
-func DeleteRoute(ctx context.Context, cfg *config.Config, cidr string) error {
-	r, err := openstack_client.Route(ctx, cfg)
+func DeleteRoute(ctx context.Context, cidr string) error {
+	r, err := openstack_client.Route(ctx, Cfg)
 	if err != nil {
 		return err
 	}
 
-	route, err := FindRoute(ctx, cfg, cidr)
+	route, err := FindRoute(ctx, cidr)
 	if err != nil {
 		return err
 	}
 	if route != nil {
-		log.Infof("vpc id %s delete route id: %s", cfg.VpcID, route.RouteId)
+		log.Infof("vpc id %s delete route id: %s", Cfg.VpcID, route.RouteId)
 		if err := r.DeleteRoute(route.RouteId); err != nil {
 			log.Errorf("Error deleteRoute: %s . \n", getErrorString(err))
 
@@ -177,7 +192,7 @@ func DeleteRoute(ctx context.Context, cfg *config.Config, cidr string) error {
 				Name:     "DeleteRoute",
 				Priority: "2",
 				NoDeal:   "1",
-				Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", cfg.Region, cfg.ClusterUUID, err.Error()),
+				Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
 			}
 
 			var mesgs []openstackTypes.NotifyMessage
@@ -192,16 +207,16 @@ func DeleteRoute(ctx context.Context, cfg *config.Config, cidr string) error {
 	return nil
 }
 
-func CreateRoute(ctx context.Context, cfg *config.Config, instanceId, cidr string) error {
-	log.Infof("begin to create route: vpc %s, instance %s, cidr %s", cfg.VpcID, instanceId, cidr)
+func CreateRoute(ctx context.Context, instanceId, cidr string) error {
+	log.Infof("begin to create route: vpc %s, instance %s, cidr %s", Cfg.VpcID, instanceId, cidr)
 
-	r, err := openstack_client.Route(ctx, cfg)
+	r, err := openstack_client.Route(ctx, Cfg)
 	if err != nil {
 		return err
 	}
 
 	createRoute := &openstackTypes.RouteArgs{
-		DomainId:     cfg.VpcID,
+		DomainId:     Cfg.VpcID,
 		InstanceId:   instanceId,
 		InstanceType: defaultRouteType,
 		CidrBlock:    cidr,
@@ -213,7 +228,7 @@ func CreateRoute(ctx context.Context, cfg *config.Config, instanceId, cidr strin
 			Name:     "CreateRoute",
 			Priority: "2",
 			NoDeal:   "1",
-			Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", cfg.Region, cfg.ClusterUUID, err.Error()),
+			Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
 		}
 
 		var mesgs []openstackTypes.NotifyMessage
