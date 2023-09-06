@@ -626,6 +626,7 @@ data:
     {
       "region": "___REGION___",
       "vpc_id": "___VPC_ID___",
+      "cluster_uuid": "___CLUSTER_UUID___",
       "network_endpoint": "http://internal.api.ksyun.com",
       "aksk_type": "file"
     }
@@ -647,7 +648,6 @@ spec:
   replicas: 1
   strategy:
     rollingUpdate:
-      maxSurge: 25%
       maxUnavailable: 25%
     type: RollingUpdate
   template:
