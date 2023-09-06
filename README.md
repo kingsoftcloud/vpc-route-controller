@@ -22,8 +22,7 @@
 ```
 ### 2.2. vpc-route-controller
 ```sh
-# git clone git@github.com:kingsoftcloud/aksk-provider.git
-# git@github.com:kingsoftcloud/vpc-route-controller.git
+# git clone git@github.com:kingsoftcloud/vpc-route-controller.git
 # cd vpc-route-controller
 ```
 修改Makefile，将“yourcipherkey”改为实际的密钥，如果SK无需加密，则设置为空即可。保存退出
@@ -38,6 +37,13 @@ CIPHER_KEY=$(shell echo "404633a025a386e110d54242a48f885e")
 ```yaml
 CIPHER_KEY=$(shell echo "")
 ```
+
+然后，请将Makefile中镜像仓库地址修改为自己实际的地址
+```yaml
+BJKSYUNREPOSITORY:= hub.kce.ksyun.com/ksyun/vpc-route-controller
+```
+
+最后执行make命令
 ```sh
 # make all
 ```
@@ -96,6 +102,9 @@ ___REGION___：集群所在region，比如北京6，值为： cn-beijing-6
 ___VPC_ID___: 集群所在vpc的id
 ___CLUSTER_UUID___：集群的uuid
 ```
+
+另外，请将yaml文件中的镜像修改为实际的地址和tag
+
 ## 5. 部署calico和vpc-route-controller
 ```sh
 # kubectl apply -f deploy/calico_secret_aksk.yaml
