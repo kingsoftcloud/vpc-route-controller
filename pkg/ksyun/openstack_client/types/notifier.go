@@ -5,4 +5,5 @@ type NotifyMessage struct {
 	Priority string
 	Content  string
 	NoDeal   string
+	Product  string
 }

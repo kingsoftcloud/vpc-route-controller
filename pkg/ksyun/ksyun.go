@@ -9,6 +9,7 @@ import (
 	log "k8s.io/klog/v2"
 
 	openstack_client "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client"
+	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/alarm"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
 	openstackTypes "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/types"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/model"
@@ -53,17 +54,19 @@ func GetInstanceIdFromIP(ctx context.Context, privateIP string) (string, error) 
 	result, err := s.DescribeInstances(getInstances)
 	if err != nil {
 		log.Errorf("Error get instance %s: %s .\n", privateIP, getErrorString(err))
-		mesg := openstackTypes.NotifyMessage{
-			Name:     "GetInstanceIdFromIP",
-			Priority: "2",
-			NoDeal:   "1",
-			Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
-		}
 
-		var mesgs []openstackTypes.NotifyMessage
-		mesgs = append(mesgs, mesg)
-		n := openstack_client.Notifier()
-		n.Notify(ctx, mesgs)
+		if Cfg.AlarmEnabled {
+			mesg := openstackTypes.AlarmArgs{
+				Name:     "GetInstanceIdFromIP",
+				Priority: "2",
+				Product:  alarm.DefaultProduct,
+				NoDeal:   "1",
+				Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
+			}
+
+			alarmClient := openstack_client.Alarm(ctx, Cfg)
+			alarmClient.CreateAlarm(mesg)
+		}
 
 		return "", err
 	}
@@ -88,19 +91,32 @@ func ListRoutes(ctx context.Context) ([]*model.Route, error) {
 	if err != nil {
 		log.Errorf("Error CheckRouteEntry: %s .\n", getErrorString(err))
 
-		mesg := openstackTypes.NotifyMessage{
-			Name:     "ListRoutes",
-			Priority: "2",
-			NoDeal:   "1",
-			Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
+		if Cfg.AlarmEnabled {
+			mesg := openstackTypes.AlarmArgs{
+				Name:     "ListRoutes",
+				Priority: "2",
+				Product:  alarm.DefaultProduct,
+				NoDeal:   "1",
+				Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
+			}
+
+			alarmClient := openstack_client.Alarm(ctx, Cfg)
+			alarmClient.CreateAlarm(mesg)
 		}
 
-		var mesgs []openstackTypes.NotifyMessage
-		mesgs = append(mesgs, mesg)
-		n := openstack_client.Notifier()
-		n.Notify(ctx, mesgs)
-
 		return result, err
+	}
+
+	if Cfg.AlarmEnabled {
+		mesg := openstackTypes.AlarmArgs{
+			Name:     "ListRoutes",
+			Priority: "2",
+			Product:  alarm.DefaultProduct,
+			NoDeal:   "1",
+			Content:  "eeeee",
+		}
+		alarmClient := openstack_client.Alarm(ctx, Cfg)
+		alarmClient.CreateAlarm(mesg)
 	}
 
 	for _, r := range routes {
@@ -141,17 +157,19 @@ func FindRoute(ctx context.Context, cidr string) (*model.Route, error) {
 	routes, err := r.GetRoutes(getRoutes)
 	if err != nil {
 		log.Errorf("Error CheckRouteEntry: %s .\n", getErrorString(err))
-		mesg := openstackTypes.NotifyMessage{
-			Name:     "FindRoute",
-			Priority: "2",
-			NoDeal:   "1",
-			Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
-		}
 
-		var mesgs []openstackTypes.NotifyMessage
-		mesgs = append(mesgs, mesg)
-		n := openstack_client.Notifier()
-		n.Notify(ctx, mesgs)
+		if Cfg.AlarmEnabled {
+			mesg := openstackTypes.AlarmArgs{
+				Name:     "FindRoute",
+				Priority: "2",
+				Product:  alarm.DefaultProduct,
+				NoDeal:   "1",
+				Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
+			}
+
+			alarmClient := openstack_client.Alarm(ctx, Cfg)
+			alarmClient.CreateAlarm(mesg)
+		}
 
 		return nil, err
 	}
@@ -188,17 +206,18 @@ func DeleteRoute(ctx context.Context, cidr string) error {
 		if err := r.DeleteRoute(route.RouteId); err != nil {
 			log.Errorf("Error deleteRoute: %s . \n", getErrorString(err))
 
-			mesg := openstackTypes.NotifyMessage{
-				Name:     "DeleteRoute",
-				Priority: "2",
-				NoDeal:   "1",
-				Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
-			}
+			if Cfg.AlarmEnabled {
+				mesg := openstackTypes.AlarmArgs{
+					Name:     "DeleteRoute",
+					Priority: "2",
+					Product:  alarm.DefaultProduct,
+					NoDeal:   "1",
+					Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
+				}
 
-			var mesgs []openstackTypes.NotifyMessage
-			mesgs = append(mesgs, mesg)
-			n := openstack_client.Notifier()
-			n.Notify(ctx, mesgs)
+				alarmClient := openstack_client.Alarm(ctx, Cfg)
+				alarmClient.CreateAlarm(mesg)
+			}
 
 			return fmt.Errorf("Error deleteRoute: %s . \n", getErrorString(err))
 		}
@@ -224,17 +243,18 @@ func CreateRoute(ctx context.Context, instanceId, cidr string) error {
 
 	id, err := r.CreateRoute(createRoute)
 	if err != nil {
-		mesg := openstackTypes.NotifyMessage{
-			Name:     "CreateRoute",
-			Priority: "2",
-			NoDeal:   "1",
-			Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
-		}
+		if Cfg.AlarmEnabled {
+			mesg := openstackTypes.AlarmArgs{
+				Name:     "CreateRoute",
+				Priority: "2",
+				Product:  alarm.DefaultProduct,
+				NoDeal:   "1",
+				Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
+			}
 
-		var mesgs []openstackTypes.NotifyMessage
-		mesgs = append(mesgs, mesg)
-		n := openstack_client.Notifier()
-		n.Notify(ctx, mesgs)
+			alarmClient := openstack_client.Alarm(ctx, Cfg)
+			alarmClient.CreateAlarm(mesg)
+		}
 
 		return fmt.Errorf("Error createRoute: %s . \n", getErrorString(err))
 	}

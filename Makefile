@@ -16,8 +16,11 @@ BUILD_DATE=$(shell date +%Y-%m-%dT%H:%M:%S%z)
 
 CIPHER_KEY=$(shell echo "your cipher key")
 KSYUN_PKG=ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun
+ALARM_PKG=ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/alarm
+AK_FOR_ALARM=$(shell echo "your ak for alarm openapi")
+SK_FOR_ALARM=$(shell echo "your sk for alarm openapi)
 
-ldflags="-s -w -X ${KSYUN_PKG}.DefaultCipherKey=${CIPHER_KEY} -X $(VERSION_PKG).Version=$(VERSION) -X $(VERSION_PKG).GitCommit=${GIT_COMMIT} -X ${VERSION_PKG}.BuildDate=${BUILD_DATE}"
+ldflags="-s -w -X ${KSYUN_PKG}.DefaultCipherKey=${CIPHER_KEY} -X ${ALARM_PKG}.AKForAlarm=${AK_FOR_ALARM} -X ${ALARM_PKG}.SKForAlarm=${SK_FOR_ALARM} -X $(VERSION_PKG).Version=$(VERSION) -X $(VERSION_PKG).GitCommit=${GIT_COMMIT} -X ${VERSION_PKG}.BuildDate=${BUILD_DATE}"
 
 all: compile build tag push
 
