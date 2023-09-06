@@ -107,18 +107,6 @@ func ListRoutes(ctx context.Context) ([]*model.Route, error) {
 		return result, err
 	}
 
-	if Cfg.AlarmEnabled {
-		mesg := openstackTypes.AlarmArgs{
-			Name:     "ListRoutes",
-			Priority: "2",
-			Product:  alarm.DefaultProduct,
-			NoDeal:   "1",
-			Content:  "eeeee",
-		}
-		alarmClient := openstack_client.Alarm(ctx, Cfg)
-		alarmClient.CreateAlarm(mesg)
-	}
-
 	for _, r := range routes {
 		if r.DestinationCIDR == "0.0.0.0/0" {
 			continue
