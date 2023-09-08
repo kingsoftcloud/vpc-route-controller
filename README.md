@@ -102,8 +102,11 @@ ___REGION___：集群所在region，比如北京6，值为： cn-beijing-6
 ___VPC_ID___: 集群所在vpc的id
 ___CLUSTER_UUID___：集群的uuid
 ```
-
-另外，请将yaml文件中的镜像修改为实际的地址和tag
+另外，请注意，如果Kubernetes版本在1.23(含）以上，请将yaml文件中的monitor_token修改为true
+```yaml
+monitor_token: "true"
+```
+最后，请将yaml文件中的镜像修改为实际的地址和tag
 
 ## 5. 部署calico和vpc-route-controller
 ```sh
