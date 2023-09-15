@@ -87,11 +87,11 @@ string转16进制命令：
 ### 3.2. 创建secret，将AK、SK保存在其中
 * 当对SK加密时：
 ```sh
-# kubectl create secret generic kce-security-token --from-literal=ak='AKTRQxqRY0SdCw31S46rrcMA' --from-literal=sk='70aM3hAdVJMB/yJHOxIB3iHyST0aijaIQWoIXCo6yLgFRofS2lHs62Q0Z6wAhgY+' --from-literal=cipher='aes256+base64'
+# kubectl create secret generic kce-security-token --from-literal=ak='AKTRQxqRY0SdCw31S46rrcMA' --from-literal=sk='70aM3hAdVJMB/yJHOxIB3iHyST0aijaIQWoIXCo6yLgFRofS2lHs62Q0Z6wAhgY+' --from-literal=cipher='aes256+base64' -n kube-system
 ```
 * 当不对SK加密时：
 ```sh
-# kubectl create secret generic kce-security-token --from-literal=ak='AKTRQxqRY0SdCw31S46rrcMA' --from-literal=sk='ODPedeQvrIo2BF6QkzkZ1HZdhkjH648cOF0fVXGt'
+# kubectl create secret generic kce-security-token --from-literal=ak='AKTRQxqRY0SdCw31S46rrcMA' --from-literal=sk='ODPedeQvrIo2BF6QkzkZ1HZdhkjH648cOF0fVXGt' -n kube-system
 ```
 ## 4. 修改部署文件
 使用deploy/calico_secret_aksk.yaml，将以下几个变量，修改为实际的值
