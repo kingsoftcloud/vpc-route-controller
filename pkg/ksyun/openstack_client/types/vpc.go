@@ -12,6 +12,7 @@ type Vpc struct {
 	CidrBlock             string `json:"CidrBlock"`
 	IsDefault             bool   `json:"IsDefault"`
 	ProvidedIpv6CidrBlock bool   `json:"ProvidedIpv6CidrBlock"`
+	ProductTag            string `json:"ProductTag"`
 }
 
 type VpcResp struct {

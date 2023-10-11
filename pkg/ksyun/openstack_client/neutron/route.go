@@ -31,6 +31,7 @@ type RouteClient struct {
 	headers      map[string]string
 	lock         sync.Mutex
 	akskProvider prvd.AKSKProvider
+	productTag   string
 }
 
 func NewRouteClient(ctx context.Context, conf *config.Config) (*RouteClient, error) {
@@ -38,9 +39,6 @@ func NewRouteClient(ctx context.Context, conf *config.Config) (*RouteClient, err
 		conf.NetworkEndpoint = config.DefaultNetworkEndpoint
 	}
 	dataClient := kopHttp.NewKopClient(ctx)
-	/*if len(conf.Token) == 0 {
-	        conf.Token = fmt.Sprintf("%s:%s", conf.UserID, conf.TenantID)
-	}*/
 
 	headers := make(map[string]string)
 	//headers["X-Auth-Project-Id"] = conf.TenantID
@@ -48,6 +46,7 @@ func NewRouteClient(ctx context.Context, conf *config.Config) (*RouteClient, err
 	headers["User-Agent"] = "vpc-route-controller"
 	headers["Content-Type"] = "application/json"
 	headers["Accept"] = "application/json"
+	headers["X-ProductTag-Source"] = "all"
 	//headers["X-Auth-User-Tag"] = "docker"
 
 	routeClient := &RouteClient{
@@ -58,7 +57,66 @@ func NewRouteClient(ctx context.Context, conf *config.Config) (*RouteClient, err
 		akskProvider: conf.AkskProvider,
 	}
 
+	result, err := routeClient.DescribeVpcs()
+	if err != nil {
+		return nil, err
+	}
+	routeClient.productTag = result.ProductTag
+
 	return routeClient, nil
+}
+
+func (c *RouteClient) DescribeVpcs() (*openTypes.Vpc, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	aksk, err := c.akskProvider.GetAKSK()
+	if err != nil {
+		return nil, err
+	}
+
+	action := url.Values{
+		"Action":  []string{"DescribeVpcs"},
+		"Version": []string{defaultVersion},
+		"VpcId.1": []string{c.conf.VpcID},
+	}
+	klog.Infof("describe vpc %s : %s", c.conf.VpcID, c.conf.NetworkEndpoint)
+	if len(aksk.SecurityToken) != 0 {
+		c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
+	}
+	c.client.SetEndpoint(c.conf.NetworkEndpoint)
+	c.client.SetHeader(c.headers)
+	c.client.SetUrlQuery("", action)
+	c.client.SetMethod(kopHttp.GET)
+	c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
+	data, err := c.client.Go()
+	if err != nil {
+		if strings.Contains(err.Error(), "SecurityTokenExpired") {
+			aksk, err := c.akskProvider.ReloadAKSK()
+			if err != nil {
+				return nil, fmt.Errorf("kop describe vpc %s and reload aksk err: %v", c.conf.VpcID, err)
+			}
+			if len(aksk.SecurityToken) != 0 {
+				c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
+			}
+			c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
+			data, err = c.client.Go()
+			if err != nil {
+				return nil, fmt.Errorf("retry kop describe vpc %s after reloading aksk err: %v", c.conf.VpcID, err)
+			}
+		} else {
+			return nil, fmt.Errorf("kop describe vpc %s err: %v", c.conf.VpcID, err)
+		}
+	}
+	response := new(openTypes.VpcResp)
+	if err := json.Unmarshal(data, response); err != nil {
+		return nil, err
+	}
+
+	if len(response.Vpcs) == 0 {
+		return nil, fmt.Errorf("can not found vpc %s", c.conf.VpcID)
+	}
+	return &(response.Vpcs[0]), nil
 }
 
 func (c *RouteClient) CreateRoute(args *openTypes.RouteArgs) (string, error) {
@@ -70,8 +128,13 @@ func (c *RouteClient) CreateRoute(args *openTypes.RouteArgs) (string, error) {
 		return "", err
 	}
 
+	actionName := "CreateRoute"
+	if c.productTag == "trust" {
+		actionName = "CreateTrustRoute"
+		c.headers["X-ProductTag-Source"] = "trust"
+	}
 	action := url.Values{
-		"Action":               []string{"CreateRoute"},
+		"Action":               []string{actionName},
 		"Version":              []string{defaultVersion},
 		"VpcId":                []string{args.DomainId},
 		"RouteType":            []string{args.InstanceType},
@@ -124,8 +187,13 @@ func (c *RouteClient) DeleteRoute(id string) error {
 		return err
 	}
 
+	actionName := "DeleteRoute"
+	if c.productTag == "trust" {
+		actionName = "DeleteTrustRoute"
+		c.headers["X-ProductTag-Source"] = "trust"
+	}
 	action := url.Values{
-		"Action":  []string{"DeleteRoute"},
+		"Action":  []string{actionName},
 		"Version": []string{defaultVersion},
 		"RouteId": []string{id},
 	}
