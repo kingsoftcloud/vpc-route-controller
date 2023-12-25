@@ -115,3 +115,8 @@ monitor_token: "true"
 确保kube-system命名空间下的所有calico-cni和vpc-route-controller处于running状态
 
 创建工作负载，能够跨节点访问，代表容器网络部署成功。
+
+如果跨节点访问Pod不通，请您检查Pod所在节点上的iptables规则是否默认放行了FORWARD流量，如果默认DROP，请执行以下命令：
+```sh
+# iptables -t filter -P FORWARD ACCEPT
+```
