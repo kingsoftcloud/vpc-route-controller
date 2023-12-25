@@ -19,7 +19,7 @@ import (
 var log = klogr.New()
 
 func printVersion() {
-	log.Info(fmt.Sprintf("Cloud Controller Manager Version: %s, git commit: %s, build date: %s",
+	log.Info(fmt.Sprintf("VPC Route Manager Version: %s, git commit: %s, build date: %s",
 		version.Version, version.GitCommit, version.BuildDate))
 	log.Info(fmt.Sprintf("Go version: %s", runtime.Version()))
 	log.Info(fmt.Sprintf("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH))
