@@ -31,9 +31,18 @@ func Run() (bool, error) {
 		return false, err
 	}
 	klog.Infoln("Current node name:", nodeName)
+	controller, err := annotation.NewController()
+	if err != nil {
+		klog.Infoln(err)
+		return false, err
+	}
 	// loop until successful or serious error
-	if err := annotation.EnsureNodeInstanceId(nodeName); err != nil {
+	if err := controller.EnsureNodeInstanceId(nodeName); err != nil {
 		klog.Infof("failed to EnsureNodeInstanceId, %v", err)
+		return false, nil
+	}
+	if err := controller.EnsureNodeZone(nodeName); err != nil {
+		klog.Infof("failed to EnsureNodeZone, %v", err)
 		return false, nil
 	}
 	return true, nil
