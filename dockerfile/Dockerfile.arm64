@@ -1,0 +1,3 @@
+FROM hub.kce.ksyun.com/tekton/arm64v8/alpine:latest
+ADD ./output/vpc-route-controller /usr/bin/vpc-route-controller
+ENTRYPOINT ["/usr/bin/vpc-route-controller"]

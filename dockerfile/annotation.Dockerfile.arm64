@@ -1,0 +1,3 @@
+FROM hub.kce.ksyun.com/tekton/arm64v8/alpine:latest
+ADD ./output/annotation /usr/bin/annotation
+ENTRYPOINT ["/usr/bin/annotation"]
