@@ -19,6 +19,7 @@ const (
 	flagLeaderElectResourceNamespace = "leader-elect-resource-namespace"
 	flagLeaderElectRetryPeriod       = "leader-elect-retry-period"
 	flagSyncPeriod                   = "sync-period"
+	routeMaxConcurrentReconciles     = "route-max-concurrent-reconciles"
 
 	defaultMetricsAddr                  = ":8080"
 	defaultHealthProbeBindAddress       = ":10258"
@@ -32,6 +33,7 @@ const (
 	defaultSyncPeriod                   = 60 * time.Minute
 	defaultQPS                          = 20.0
 	defaultBurst                        = 30
+	defaultRouteMaxConcurrentReconciles = 5
 )
 
 // RuntimeConfig stores the configuration for controller-runtime
@@ -48,6 +50,7 @@ type RuntimeConfig struct {
 	SyncPeriod                   time.Duration
 	QPS                          float32
 	Burst                        int
+	RouteMaxConcurrentReconciles int
 }
 
 func (c *RuntimeConfig) BindFlags(fs *pflag.FlagSet) {
@@ -76,6 +79,8 @@ func (c *RuntimeConfig) BindFlags(fs *pflag.FlagSet) {
 		"The namespace of resource object that is used for locking during leader election.")
 	fs.DurationVar(&c.SyncPeriod, flagSyncPeriod, defaultSyncPeriod,
 		"Period at which the controller forces the repopulation of its local object stores.")
+	fs.IntVar(&c.RouteMaxConcurrentReconciles, routeMaxConcurrentReconciles, defaultRouteMaxConcurrentReconciles,
+		"Max concurrent for route reconciles.")
 
 }
 

@@ -21,6 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	"time"
 
+	ctrlCfg "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/config"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/controller/helper"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/model"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/util/metric"
@@ -69,7 +70,7 @@ func add(mgr manager.Manager, r *ReconcileRoute) error {
 		"route-controller", mgr,
 		controller.Options{
 			Reconciler:              r,
-			MaxConcurrentReconciles: 1,
+			MaxConcurrentReconciles: ctrlCfg.ControllerCFG.RuntimeConfig.RouteMaxConcurrentReconciles,
 			RecoverPanic:            &recoverPanic,
 		},
 	)

@@ -4,7 +4,7 @@ CMD_DIR := ./cmd/manager
 # Project output directory.
 OUTPUT_DIR := ./output
 
-VERSION := v1.0.0
+VERSION := v1.3.0
 
 # Ksyun repository
 BJKSYUNREPOSITORY:= hub.kce.ksyun.com/ksyun/vpc-route-controller
