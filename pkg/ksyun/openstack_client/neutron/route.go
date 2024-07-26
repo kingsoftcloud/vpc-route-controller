@@ -94,7 +94,7 @@ func (c *RouteClient) DescribeVpcs() (*openTypes.Vpc, error) {
 		if strings.Contains(err.Error(), "SecurityTokenExpired") {
 			aksk, err := c.akskProvider.ReloadAKSK()
 			if err != nil {
-				return nil, fmt.Errorf("kop describe vpc %s and reload aksk err: %v", c.conf.VpcID, err)
+				return nil, fmt.Errorf("kop describe vpc %s and reload aksk err: %w", c.conf.VpcID, err)
 			}
 			if len(aksk.SecurityToken) != 0 {
 				c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
@@ -102,10 +102,10 @@ func (c *RouteClient) DescribeVpcs() (*openTypes.Vpc, error) {
 			c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
 			data, err = c.client.Go()
 			if err != nil {
-				return nil, fmt.Errorf("retry kop describe vpc %s after reloading aksk err: %v", c.conf.VpcID, err)
+				return nil, fmt.Errorf("retry kop describe vpc %s after reloading aksk err: %w", c.conf.VpcID, err)
 			}
 		} else {
-			return nil, fmt.Errorf("kop describe vpc %s err: %v", c.conf.VpcID, err)
+			return nil, fmt.Errorf("kop describe vpc %s err: %w", c.conf.VpcID, err)
 		}
 	}
 	response := new(openTypes.VpcResp)
@@ -156,7 +156,7 @@ func (c *RouteClient) CreateRoute(args *openTypes.RouteArgs) (string, error) {
 		if strings.Contains(err.Error(), "SecurityTokenExpired") {
 			aksk, err := c.akskProvider.ReloadAKSK()
 			if err != nil {
-				return "", fmt.Errorf("kop create route %v and reload aksk err: %v", args, err)
+				return "", fmt.Errorf("kop create route %v and reload aksk err: %w", args, err)
 			}
 			if len(aksk.SecurityToken) != 0 {
 				c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
@@ -164,10 +164,10 @@ func (c *RouteClient) CreateRoute(args *openTypes.RouteArgs) (string, error) {
 			c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
 			data, err = c.client.Go()
 			if err != nil {
-				return "", fmt.Errorf("retry kop create route %v after reloading aksk err: %v", args, err)
+				return "", fmt.Errorf("retry kop create route %v after reloading aksk err: %w", args, err)
 			}
 		} else {
-			return "", fmt.Errorf("kop create route %v err: %v", args, err)
+			return "", fmt.Errorf("kop create route %v err: %w", args, err)
 		}
 	}
 
@@ -210,7 +210,7 @@ func (c *RouteClient) DeleteRoute(id string) error {
 		if strings.Contains(err.Error(), "SecurityTokenExpired") {
 			aksk, err := c.akskProvider.ReloadAKSK()
 			if err != nil {
-				return fmt.Errorf("kop delete route %v and reload aksk err: %v", id, err)
+				return fmt.Errorf("kop delete route %v and reload aksk err: %w", id, err)
 			}
 			if len(aksk.SecurityToken) != 0 {
 				c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
@@ -218,10 +218,10 @@ func (c *RouteClient) DeleteRoute(id string) error {
 			c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
 			_, err = c.client.Go()
 			if err != nil {
-				return fmt.Errorf("retry kop delete route %v after reloading aksk err: %v", id, err)
+				return fmt.Errorf("retry kop delete route %v after reloading aksk err: %w", id, err)
 			}
 		} else {
-			return fmt.Errorf("kop delete route %v err: %v", id, err)
+			return fmt.Errorf("kop delete route %v err: %w", id, err)
 		}
 	}
 	return nil
@@ -258,7 +258,7 @@ func (c *RouteClient) ListRoutes(args *openTypes.RouteArgs) ([]openTypes.RouteSe
 		if strings.Contains(err.Error(), "SecurityTokenExpired") {
 			aksk, err := c.akskProvider.ReloadAKSK()
 			if err != nil {
-				return nil, fmt.Errorf("kop list routes %v and reload aksk err: %v", args, err)
+				return nil, fmt.Errorf("kop list routes %v and reload aksk err: %w", args, err)
 			}
 			if len(aksk.SecurityToken) != 0 {
 				c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
@@ -266,17 +266,17 @@ func (c *RouteClient) ListRoutes(args *openTypes.RouteArgs) ([]openTypes.RouteSe
 			c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
 			data, err = c.client.Go()
 			if err != nil {
-				return nil, fmt.Errorf("retry kop list routes %v after reloading aksk err: %v", args, err)
+				return nil, fmt.Errorf("retry kop list routes %v after reloading aksk err: %w", args, err)
 			}
 		} else {
-			return nil, fmt.Errorf("kop list routes %v err: %v", args, err)
+			return nil, fmt.Errorf("kop list routes %v err: %w", args, err)
 		}
 	}
 
 	response := new(openTypes.GetRoutesResponse)
 	err = json.Unmarshal(data, response)
 	if err != nil {
-		return nil, fmt.Errorf("json unmarshal %s err: %v", data, err)
+		return nil, fmt.Errorf("json unmarshal %s err: %w", data, err)
 	}
 	return response.RouteSet, nil
 }
@@ -314,7 +314,7 @@ func (c *RouteClient) GetRoutes(args *openTypes.RouteArgs) ([]openTypes.RouteSet
 		if strings.Contains(err.Error(), "SecurityTokenExpired") {
 			aksk, err := c.akskProvider.ReloadAKSK()
 			if err != nil {
-				return nil, fmt.Errorf("kop get routes %v and reload aksk err: %v", args, err)
+				return nil, fmt.Errorf("kop get routes %v and reload aksk err: %w", args, err)
 			}
 			if len(aksk.SecurityToken) != 0 {
 				c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
@@ -322,17 +322,17 @@ func (c *RouteClient) GetRoutes(args *openTypes.RouteArgs) ([]openTypes.RouteSet
 			c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
 			data, err = c.client.Go()
 			if err != nil {
-				return nil, fmt.Errorf("retry kop get routes %v after reloading aksk err: %v", args, err)
+				return nil, fmt.Errorf("retry kop get routes %v after reloading aksk err: %w", args, err)
 			}
 		} else {
-			return nil, fmt.Errorf("kop get routes %v err: %v", args, err)
+			return nil, fmt.Errorf("kop get routes %v err: %w", args, err)
 		}
 	}
 
 	response := new(openTypes.GetRoutesResponse)
 	err = json.Unmarshal(data, response)
 	if err != nil {
-		return nil, fmt.Errorf("json unmarshal %s err: %v", data, err)
+		return nil, fmt.Errorf("json unmarshal %s err: %w", data, err)
 	}
 	return response.RouteSet, nil
 }
@@ -365,7 +365,7 @@ func (c *RouteClient) GetRoute(id string) (*openTypes.RouteSetType, error) {
 		if strings.Contains(err.Error(), "SecurityTokenExpired") {
 			aksk, err := c.akskProvider.ReloadAKSK()
 			if err != nil {
-				return nil, fmt.Errorf("kop get route %v and reload aksk err: %v", id, err)
+				return nil, fmt.Errorf("kop get route %v and reload aksk err: %w", id, err)
 			}
 			if len(aksk.SecurityToken) != 0 {
 				c.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
@@ -373,16 +373,16 @@ func (c *RouteClient) GetRoute(id string) (*openTypes.RouteSetType, error) {
 			c.client.SetSigner(defaultServerName, c.conf.Region, aksk.AK, aksk.SK)
 			data, err = c.client.Go()
 			if err != nil {
-				return nil, fmt.Errorf("retry kop get route %v after reloading aksk err: %v", id, err)
+				return nil, fmt.Errorf("retry kop get route %v after reloading aksk err: %w", id, err)
 			}
 		} else {
-			return nil, fmt.Errorf("kop get route %v err: %v", id, err)
+			return nil, fmt.Errorf("kop get route %v err: %w", id, err)
 		}
 	}
 	response := new(openTypes.DescribeRouteResponse)
 	err = json.Unmarshal([]byte(data), response)
 	if err != nil {
-		return nil, fmt.Errorf("json unmarshal %s err: %v", data, err)
+		return nil, fmt.Errorf("json unmarshal %s err: %w", data, err)
 	}
 	return &response.RouteSet[0], nil
 }

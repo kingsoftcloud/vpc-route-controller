@@ -57,7 +57,7 @@ func createRouteForInstance(ctx context.Context, instanceId, cidr string) (
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("error create route for node %v, err: %v", instanceId, err)
+		return nil, fmt.Errorf("error create route for node %v, err: %w", instanceId, err)
 	}
 
 	if route == nil {
@@ -76,7 +76,7 @@ func deleteRouteForInstance(ctx context.Context, cidr string) error {
 func (r *ReconcileRoute) syncRoutes(ctx context.Context, nodes *v1.NodeList) error {
 	routes, err := ksyun.ListRoutes(ctx)
 	if err != nil {
-		return fmt.Errorf("error listing routes: %v", err)
+		return fmt.Errorf("error listing routes: %w", err)
 	}
 
 	for _, route := range routes {
@@ -89,22 +89,22 @@ func (r *ReconcileRoute) syncRoutes(ctx context.Context, nodes *v1.NodeList) err
 		}
 	}
 
-	for _, node := range nodes.Items {
-		if !needSyncRoute(&node) {
+	for index, node := range nodes.Items {
+		if !needSyncRoute(&nodes.Items[index]) {
 			continue
 		}
 
-		_, ipv4RouteCidr, err := getIPv4RouteForNode(&node)
+		_, ipv4RouteCidr, err := getIPv4RouteForNode(&nodes.Items[index])
 		if err != nil || ipv4RouteCidr == "" {
 			continue
 		}
 
-		err = r.addRouteForNode(ctx, ipv4RouteCidr, &node, routes)
+		err = r.addRouteForNode(ctx, ipv4RouteCidr, &nodes.Items[index], routes)
 		if err != nil {
 			continue
 		}
 
-		if err := r.updateNetworkingCondition(ctx, &node, true); err != nil {
+		if err := r.updateNetworkingCondition(ctx, &nodes.Items[index], true); err != nil {
 			klog.Errorf("update node %s network condition err: %s", node.Name, err.Error())
 		}
 	}
@@ -112,8 +112,8 @@ func (r *ReconcileRoute) syncRoutes(ctx context.Context, nodes *v1.NodeList) err
 }
 
 func conflictWithNodes(ctx context.Context, route *model.Route, nodes *v1.NodeList) bool {
-	for _, node := range nodes.Items {
-		ipv4Cidr, _, err := getIPv4RouteForNode(&node)
+	for index, node := range nodes.Items {
+		ipv4Cidr, _, err := getIPv4RouteForNode(&nodes.Items[index])
 		if err != nil {
 			klog.Errorf("error get ipv4 cidr from node: %v", node.Name)
 			continue
@@ -126,7 +126,7 @@ func conflictWithNodes(ctx context.Context, route *model.Route, nodes *v1.NodeLi
 			klog.Errorf("error get conflict state from node: %v and route: %v", node.Name, route)
 			continue
 		}
-		instanceId := getNodeInstanceId(ctx, &node)
+		instanceId := getNodeInstanceId(ctx, &nodes.Items[index])
 		if contains || (equal && route.InstanceId != instanceId) {
 			klog.Warningf("conflict route with node %v(%v) found, route: %+v", node.Name, ipv4Cidr, route)
 			return true
@@ -160,7 +160,7 @@ func containsRoute(outside *net.IPNet, insideRoute string) (containsEqual bool, 
 	}
 	_, cidr, err := net.ParseCIDR(insideRoute)
 	if err != nil {
-		return false, false, fmt.Errorf("ignoring route %s, unparsable CIDR: %v", insideRoute, err)
+		return false, false, fmt.Errorf("ignoring route %s, unparsable CIDR: %w", insideRoute, err)
 	}
 
 	if outside.String() == insideRoute {
@@ -226,8 +226,8 @@ func (r *ReconcileRoute) NodeList() (*v1.NodeList, error) {
 		return nil, err
 	}
 	var mnodes []v1.Node
-	for _, node := range nodes.Items {
-		if helper.HasExcludeLabel(&node) {
+	for index, node := range nodes.Items {
+		if helper.HasExcludeLabel(&nodes.Items[index]) {
 			continue
 		}
 		mnodes = append(mnodes, node)
@@ -251,16 +251,16 @@ func getNodeInstanceId(ctx context.Context, node *v1.Node) string {
 	}
 
 	/*
-	for _, addr := range node.Status.Addresses {
-		if addr.Type == "InternalIP" {
-			nodeIP := addr.Address
-			instanceId, err := ksyun.GetInstanceIdFromIP(ctx, nodeIP)
-			if err != nil {
-				return ""
+		for _, addr := range node.Status.Addresses {
+			if addr.Type == "InternalIP" {
+				nodeIP := addr.Address
+				instanceId, err := ksyun.GetInstanceIdFromIP(ctx, nodeIP)
+				if err != nil {
+					return ""
+				}
+				return instanceId
 			}
-			return instanceId
-		}
-	}*/
+		}*/
 
 	return ""
 }

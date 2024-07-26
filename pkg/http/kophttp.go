@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"net"
 	"net/http"
@@ -219,7 +219,8 @@ func (kop *KopClient) send() ([]byte, error) {
 	var span opentracing.Span = nil
 	klog.V(9).Infof("req url: %s %s body: %v", kop.method, kop.url, kop.body)
 	// var body map[string]interface{}
-	requ, err := http.NewRequest(kop.method, kop.url, nil)
+	var requ *http.Request
+	var err error
 	xRequestId := kop.genRequestId()
 
 	switch kop.method {
@@ -278,11 +279,13 @@ func (kop *KopClient) send() ([]byte, error) {
 		ext.SpanKindRPCClient.Set(span)
 		ext.HTTPUrl.Set(span, kop.url)
 		ext.HTTPMethod.Set(span, kop.method)
-		span.Tracer().Inject(
+		if err = span.Tracer().Inject(
 			span.Context(),
 			opentracing.HTTPHeaders,
 			opentracing.HTTPHeadersCarrier(requ.Header),
-		)
+		); err != nil {
+			klog.Error("span tracer inject error: %w", err)
+		}
 	} else {
 		klog.V(9).Infof("context is nil, unable to propagation the tracing info")
 	}
@@ -294,7 +297,7 @@ func (kop *KopClient) send() ([]byte, error) {
 		return nil, err
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -350,16 +353,52 @@ func shouldRetry(err error) bool {
 		return false
 	}
 
-	_, ok := err.(TimeoutError)
+	var timeoutErr TimeoutError
+	ok := errors.As(err, &timeoutErr)
 	if ok {
 		return true
 	}
 
-	switch err {
-	case io.ErrUnexpectedEOF, io.EOF:
+	//switch err {
+	//case errors.Is(err, io.ErrUnexpectedEOF), errors.Is(err, io.EOF):
+	//	return true
+	//}
+	if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
 		return true
 	}
-	switch e := err.(type) {
+
+	var netDNSError *net.DNSError
+	if errors.As(err, &netDNSError) {
+		return true
+	} else {
+		var netOpError *net.OpError
+		if errors.As(err, &netOpError) {
+			if netOpError.Op == "read" || netOpError.Op == "write" {
+				return true
+			}
+		}
+		var urlError *url.Error
+		if errors.As(err, &urlError) {
+			if urlError.Op == "Get" ||
+				urlError.Op == "Put" ||
+				urlError.Op == "Delete" ||
+				urlError.Op == "Head" {
+				return shouldRetry(urlError.Err)
+			} else {
+				return false
+			}
+		}
+		var utilError *util.Error
+		if errors.As(err, &utilError) {
+			var ret bool
+			if utilError.KopError.StatusCode == http.StatusBadRequest && strings.Contains(utilError.KopError.Message, "SecurityTokenExpired") {
+				ret = false
+			}
+			return ret
+		}
+	}
+
+	/*switch e := err.(type) {
 	case *net.DNSError:
 		return true
 	case *net.OpError:
@@ -387,7 +426,7 @@ func shouldRetry(err error) bool {
 		}
 
 		return ret
-	}
+	}*/
 	return false
 }
 

@@ -65,7 +65,9 @@ func GetInstanceIdFromIP(ctx context.Context, privateIP string) (string, error) 
 			}
 
 			alarmClient := openstack_client.Alarm(ctx, Cfg)
-			alarmClient.CreateAlarm(mesg)
+			if err = alarmClient.CreateAlarm(mesg); err != nil {
+				log.Errorf("Error create alarm: %v", err)
+			}
 		}
 
 		return "", err
@@ -101,7 +103,9 @@ func ListRoutes(ctx context.Context) ([]*model.Route, error) {
 			}
 
 			alarmClient := openstack_client.Alarm(ctx, Cfg)
-			alarmClient.CreateAlarm(mesg)
+			if err = alarmClient.CreateAlarm(mesg); err != nil {
+				log.Errorf("Error create alarm: %v", err)
+			}
 		}
 
 		return result, err
@@ -156,7 +160,9 @@ func FindRoute(ctx context.Context, cidr string) (*model.Route, error) {
 			}
 
 			alarmClient := openstack_client.Alarm(ctx, Cfg)
-			alarmClient.CreateAlarm(mesg)
+			if err = alarmClient.CreateAlarm(mesg); err != nil {
+				log.Errorf("Error create alarm: %v", err)
+			}
 		}
 
 		return nil, err
@@ -204,7 +210,9 @@ func DeleteRoute(ctx context.Context, cidr string) error {
 				}
 
 				alarmClient := openstack_client.Alarm(ctx, Cfg)
-				alarmClient.CreateAlarm(mesg)
+				if err = alarmClient.CreateAlarm(mesg); err != nil {
+					log.Errorf("Error create alarm: %v", err)
+				}
 			}
 
 			return fmt.Errorf("Error deleteRoute: %s . \n", getErrorString(err))
@@ -241,7 +249,9 @@ func CreateRoute(ctx context.Context, instanceId, cidr string) error {
 			}
 
 			alarmClient := openstack_client.Alarm(ctx, Cfg)
-			alarmClient.CreateAlarm(mesg)
+			if err = alarmClient.CreateAlarm(mesg); err != nil {
+				log.Errorf("Error create alarm: %v", err)
+			}
 		}
 
 		return fmt.Errorf("Error createRoute: %s . \n", getErrorString(err))
@@ -271,7 +281,7 @@ func GetNeutronConfig() (*config.Config, error) {
 	}
 
 	if err := json.Unmarshal([]byte(content), &c); err != nil {
-		return nil, fmt.Errorf("json unmarshal %s error: %v", content, err)
+		return nil, fmt.Errorf("json unmarshal %s error: %w", content, err)
 	}
 
 	switch c.AkskType {

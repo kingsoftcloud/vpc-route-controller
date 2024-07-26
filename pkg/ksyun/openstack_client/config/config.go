@@ -48,5 +48,5 @@ type Config struct {
 	// http client backoff
 	Backoff *wait.Backoff `json:"backoff"`
 
-	AlarmEnabled bool `json: "alarm_enabled"`
+	AlarmEnabled bool `json:"alarm_enabled"`
 }

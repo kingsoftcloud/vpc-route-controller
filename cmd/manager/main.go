@@ -50,14 +50,14 @@ func main() {
 
 	log.Info("Registering Components.")
 	if err := controller.AddToManager(mgr, ctrlCfg.ControllerCFG.Controllers); err != nil {
-		log.Error(err, "add controller: %s", err.Error())
+		log.Error(err, "failed to add controller")
 		os.Exit(1)
 	} else {
 		log.Info(fmt.Sprintf("Loaded controllers: %v", ctrlCfg.ControllerCFG.Controllers))
 	}
 
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
-		log.Error(err, "Manager exited non-zero: %s", err.Error())
+		log.Error(err, "Manager exited non-zero")
 		os.Exit(1)
 	}
 }

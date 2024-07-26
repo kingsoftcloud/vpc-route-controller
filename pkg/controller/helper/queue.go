@@ -89,7 +89,7 @@ func (t *Queue) enqueue(obj interface{}, skippable bool) {
 func (t *Queue) defaultKeyFunc(obj interface{}) (interface{}, error) {
 	key, err := keyFunc(obj)
 	if err != nil {
-		return "", fmt.Errorf("could not get key for object %+v: %v", obj, err)
+		return "", fmt.Errorf("could not get key for object %+v: %w", obj, err)
 	}
 
 	return key, nil

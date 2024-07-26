@@ -37,7 +37,7 @@ type ifreqFlags struct {
 func ioctl(fd int, request, argp uintptr) error {
 	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), request, argp)
 	if errno != 0 {
-		return fmt.Errorf("ioctl failed with '%s'", errno)
+		return fmt.Errorf("ioctl failed with '%w'", errno)
 	}
 	return nil
 }

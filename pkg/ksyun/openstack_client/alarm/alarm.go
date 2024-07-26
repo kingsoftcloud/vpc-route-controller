@@ -106,10 +106,10 @@ func (c *AlarmClient) CreateAlarm(message openTypes.AlarmArgs) error {
 			c.client.SetSigner(defaultServerName, c.conf.Region, AKForAlarm, SKForAlarm)
 			_, err = c.client.Go()
 			if err != nil {
-				return fmt.Errorf("retry kop create alarm %v after reloading aksk err: %v", message, err)
+				return fmt.Errorf("retry kop create alarm %v after reloading aksk err: %w", message, err)
 			}
 		} else {
-			return fmt.Errorf("kop create alarm %v err: %v", message, err)
+			return fmt.Errorf("kop create alarm %v err: %w", message, err)
 		}
 	}
 

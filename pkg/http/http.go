@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -90,7 +89,7 @@ func (c *Client) DoRequest(req *http.Request) ([]byte, error) {
 		log.Errorf("do request error :%v", err)
 		return nil, err
 	}
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Errorf("read body error :%v", data)
 		return nil, err

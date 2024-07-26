@@ -24,7 +24,7 @@ import (
 
 func getIfaceAddrs(iface *net.Interface) ([]netlink.Addr, error) {
 	link := &netlink.Device{
-		netlink.LinkAttrs{
+		LinkAttrs: netlink.LinkAttrs{
 			Index: iface.Index,
 		},
 	}
@@ -106,8 +106,8 @@ func GetInterfaceByIP(ip net.IP) (*net.Interface, error) {
 		return nil, err
 	}
 
-	for _, iface := range ifaces {
-		err := GetIfaceIP4AddrMatch(&iface, ip)
+	for index, iface := range ifaces {
+		err := GetIfaceIP4AddrMatch(&ifaces[index], ip)
 		if err == nil {
 			return &iface, nil
 		}

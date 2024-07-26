@@ -85,7 +85,7 @@ func (n *ServerClient) DescribeInstances(args *openTypes.InstanceArgs) (*openTyp
 		if strings.Contains(err.Error(), "SecurityTokenExpired") {
 			aksk, err := n.akskProvider.ReloadAKSK()
 			if err != nil {
-				return nil, fmt.Errorf("kop get instances %v and reload aksk err: %v", args, err)
+				return nil, fmt.Errorf("kop get instances %v and reload aksk err: %w", args, err)
 			}
 			if len(aksk.SecurityToken) != 0 {
 				n.headers["X-Ksc-Security-Token"] = aksk.SecurityToken
@@ -93,17 +93,17 @@ func (n *ServerClient) DescribeInstances(args *openTypes.InstanceArgs) (*openTyp
 			n.client.SetSigner(defaultServerName, n.conf.Region, aksk.AK, aksk.SK)
 			data, err = n.client.Go()
 			if err != nil {
-				return nil, fmt.Errorf("retry kop get instances %v after reloading aksk err: %v", args, err)
+				return nil, fmt.Errorf("retry kop get instances %v after reloading aksk err: %w", args, err)
 			}
 		} else {
-			return nil, fmt.Errorf("kop get instances %v err: %v", args, err)
+			return nil, fmt.Errorf("kop get instances %v err: %w", args, err)
 		}
 	}
 
 	response := new(openTypes.GetInstancesResponse)
 	err = json.Unmarshal(data, response)
 	if err != nil {
-		return nil, fmt.Errorf("json unmarshal %s err: %v", data, err)
+		return nil, fmt.Errorf("json unmarshal %s err: %w", data, err)
 	}
 
 	if len(response.InstancesSet) == 0 {
