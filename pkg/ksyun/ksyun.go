@@ -3,6 +3,7 @@ package ksyun
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 
 	"golang.org/x/net/context"
@@ -183,6 +184,24 @@ func FindRoute(ctx context.Context, cidr string) (*model.Route, error) {
 		RouteId:         routes[0].RouteId,
 		InstanceId:      gatewayId,
 	}, nil
+}
+
+func ConflictRouteAlarm(ctx context.Context, routeId, nodeName string, podCidr *net.IPNet) error {
+        if Cfg.AlarmEnabled {
+		errStr := fmt.Sprintf("route(id: %s, cidr: %s) conflict with vpc route of node %s route(podCidr: %s)", routeId, nodeName, podCidr)
+                mesg := openstackTypes.AlarmArgs{
+                        Name:     "ConflictRouteAlarm",
+                        Priority: "1",
+                        Product:  alarm.DefaultProduct,
+                        NoDeal:   "1",
+                        Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, errStr),
+                }
+
+                alarmClient := openstack_client.Alarm(ctx, Cfg)
+                return alarmClient.CreateAlarm(mesg)
+        } else {
+		return fmt.Errorf("alarm disabled.")
+	}
 }
 
 func DeleteRoute(ctx context.Context, cidr string) error {
