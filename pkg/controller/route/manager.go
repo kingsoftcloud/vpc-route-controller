@@ -157,7 +157,7 @@ func findRoute(ctx context.Context, cidr string, cachedRoutes []*model.Route) (*
 func containsRoute(outside *net.IPNet, insideRoute string) (containsEqual bool, realContains bool, err error) {
 	if outside == nil {
 		// outside is nil, contains all route
-		return true, true, nil
+		return false, false, nil
 	}
 	_, cidr, err := net.ParseCIDR(insideRoute)
 	if err != nil {
@@ -172,10 +172,10 @@ func containsRoute(outside *net.IPNet, insideRoute string) (containsEqual bool, 
 	for i := range lastIP {
 		lastIP[i] = cidr.IP[i] | ^cidr.Mask[i]
 	}
-	if !outside.Contains(cidr.IP) || !outside.Contains(lastIP) {
+	if !outside.Contains(cidr.IP) && !outside.Contains(lastIP) {
 		return false, false, nil
 	}
-	return true, true, nil
+	return false, true, nil
 }
 
 func needSyncRoute(node *v1.Node) bool {
