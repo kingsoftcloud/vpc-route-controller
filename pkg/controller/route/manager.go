@@ -67,10 +67,10 @@ func createRouteForInstance(ctx context.Context, instanceId, cidr string) (
 	return route, nil
 }
 
-func deleteRouteForInstance(ctx context.Context, cidr string) error {
+func deleteRouteForInstance(ctx context.Context, cidr, routeId string) error {
 	routeLock.Lock()
 	defer routeLock.Unlock()
-	return ksyun.DeleteRoute(ctx, cidr)
+	return ksyun.DeleteRoute(ctx, cidr, routeId)
 }
 
 func (r *ReconcileRoute) syncRoutes(ctx context.Context, nodes *v1.NodeList) error {

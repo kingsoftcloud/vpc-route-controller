@@ -204,38 +204,44 @@ func ConflictRouteAlarm(ctx context.Context, routeId, nodeName string, podCidr *
 	}
 }
 
-func DeleteRoute(ctx context.Context, cidr string) error {
+func DeleteRoute(ctx context.Context, cidr, routeId string) error {
 	r, err := openstack_client.Route(ctx, Cfg)
 	if err != nil {
 		return err
 	}
 
-	route, err := FindRoute(ctx, cidr)
-	if err != nil {
-		return err
+	if routeId == "" {
+		if cidr != "" {
+			route, err := FindRoute(ctx, cidr)
+			if err != nil {
+				return err
+			}
+			routeId = route.RouteId
+		} else {
+			return nil
+		}
 	}
-	if route != nil {
-		log.Infof("vpc id %s delete route id: %s", Cfg.VpcID, route.RouteId)
-		if err := r.DeleteRoute(route.RouteId); err != nil {
-			log.Errorf("Error deleteRoute: %s . \n", getErrorString(err))
 
-			if Cfg.AlarmEnabled {
-				mesg := openstackTypes.AlarmArgs{
-					Name:     "DeleteRoute",
-					Priority: "2",
-					Product:  alarm.DefaultProduct,
-					NoDeal:   "1",
-					Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
-				}
+	log.Infof("vpc id %s delete route id: %s", Cfg.VpcID, routeId)
+	if err := r.DeleteRoute(routeId); err != nil {
+		log.Errorf("Error deleteRoute: %s . \n", getErrorString(err))
 
-				alarmClient := openstack_client.Alarm(ctx, Cfg)
-				if err = alarmClient.CreateAlarm(mesg); err != nil {
-					log.Errorf("Error create alarm: %v", err)
-				}
+		if Cfg.AlarmEnabled {
+			mesg := openstackTypes.AlarmArgs{
+				Name:     "DeleteRoute",
+				Priority: "2",
+				Product:  alarm.DefaultProduct,
+				NoDeal:   "1",
+				Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, err.Error()),
 			}
 
-			return fmt.Errorf("Error deleteRoute: %s . \n", getErrorString(err))
+			alarmClient := openstack_client.Alarm(ctx, Cfg)
+			if err = alarmClient.CreateAlarm(mesg); err != nil {
+				log.Errorf("Error create alarm: %v", err)
+			}
 		}
+
+		return fmt.Errorf("Error deleteRoute: %s . \n", getErrorString(err))
 	}
 
 	return nil
