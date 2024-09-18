@@ -188,12 +188,12 @@ func FindRoute(ctx context.Context, cidr string) (*model.Route, error) {
 
 func ConflictRouteAlarm(ctx context.Context, routeId, nodeName string, podCidr *net.IPNet) error {
         if Cfg.AlarmEnabled {
-		errStr := fmt.Sprintf("route(id: %s, cidr: %s) conflict with vpc route of node %s route(podCidr: %s)", routeId, nodeName, podCidr)
+		errStr := fmt.Sprintf("route(id: %s) conflict with vpc route of node %s (podCidr: %s)", routeId, nodeName, podCidr)
                 mesg := openstackTypes.AlarmArgs{
                         Name:     "ConflictRouteAlarm",
-                        Priority: "1",
+                        Priority: "0",
                         Product:  alarm.DefaultProduct,
-                        NoDeal:   "1",
+                        NoDeal:   "0",
                         Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, errStr),
                 }
 
