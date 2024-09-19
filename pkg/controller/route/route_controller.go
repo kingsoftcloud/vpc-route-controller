@@ -174,14 +174,12 @@ func (r *ReconcileRoute) syncCloudRoute(ctx context.Context, node *corev1.Node) 
 		return err
 	}
 
-	var routeErr []error
-	routeErr = append(routeErr, r.addRouteForNode(ctx, ipv4RouteCidr, node, nil))
-	if utilerrors.NewAggregate(routeErr) != nil {
-		err := r.updateNetworkingCondition(ctx, node, false)
+	if routeErr := r.addRouteForNode(ctx, ipv4RouteCidr, node, nil); routeErr != nil {
+		err = r.updateNetworkingCondition(ctx, node, false)
 		if err != nil {
 			klog.Errorf("update network condition for node %s, error: %v", node.Name, err.Error())
 		}
-		return utilerrors.NewAggregate(routeErr)
+		return routeErr
 	} else {
 		return r.updateNetworkingCondition(ctx, node, true)
 	}
