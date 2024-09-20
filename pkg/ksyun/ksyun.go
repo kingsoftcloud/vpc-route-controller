@@ -204,6 +204,24 @@ func ConflictRouteAlarm(ctx context.Context, routeId, nodeName string, podCidr *
 	}
 }
 
+func RouteInstanceIdIsNullAlarm(ctx context.Context, routeId string) error {
+        if Cfg.AlarmEnabled {
+		errStr := fmt.Sprintf("instanceId of route %s is null", routeId)
+                mesg := openstackTypes.AlarmArgs{
+                        Name:     "RouteInstanceIdIsNullAlarm",
+                        Priority: "0",
+                        Product:  alarm.DefaultProduct,
+                        NoDeal:   "0",
+                        Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, errStr),
+                }
+
+                alarmClient := openstack_client.Alarm(ctx, Cfg)
+                return alarmClient.CreateAlarm(mesg)
+        } else {
+                return fmt.Errorf("alarm disabled.")
+        }
+}
+
 func DeleteRoute(ctx context.Context, cidr, routeId string) error {
 	r, err := openstack_client.Route(ctx, Cfg)
 	if err != nil {

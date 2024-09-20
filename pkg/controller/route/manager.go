@@ -119,6 +119,15 @@ func (r *ReconcileRoute) syncRoutes(ctx context.Context, nodes *v1.NodeList) err
 }
 
 func conflictWithNodes(ctx context.Context, route *model.Route, nodes *v1.NodeList) (bool, string, *net.IPNet) {
+	if route.InstanceId == "" {
+		if err := ksyun.RouteInstanceIdIsNullAlarm(ctx, route.RouteId); err != nil {
+                        klog.Errorf("instanceId of route %s is null, alarm failed: %v", route.RouteId, err)
+                } else {
+                        klog.Infof("instanceId of route %s is null, alarmed.", route.RouteId)
+                }
+
+		return false, "", nil
+	}
 	for index, node := range nodes.Items {
 		ipv4Cidr, _, err := getIPv4RouteForNode(&nodes.Items[index])
 		if err != nil {
@@ -134,6 +143,9 @@ func conflictWithNodes(ctx context.Context, route *model.Route, nodes *v1.NodeLi
 			continue
 		}
 		instanceId := getNodeInstanceId(ctx, &nodes.Items[index])
+		if instanceId == "" {
+			continue
+		}
 		if contains || (equal && route.InstanceId != instanceId) {
 			klog.Warningf("conflict route with node %v(%v) found, route: %+v", node.Name, ipv4Cidr, route)
 			return true, node.Name, ipv4Cidr
