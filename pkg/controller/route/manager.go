@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -79,8 +80,14 @@ func (r *ReconcileRoute) syncRoutes(ctx context.Context, nodes *v1.NodeList) err
 		return fmt.Errorf("error listing routes: %w", err)
 	}
 
+	clusterCIDRStr := os.Getenv("ClUSTER_CIDR")
+	_, clusterCIDR, err := net.ParseCIDR(clusterCIDRStr)
+	if err != nil {
+		klog.Errorf("unparsable CIDR: %s - %v", clusterCIDRStr, err)
+	}
+
 	for _, route := range routes {
-		conflict, nodeName, podCidr := conflictWithNodes(ctx, route, nodes)
+		conflict, residual, nodeName, podCidr := conflictWithNodesOrResidual(ctx, route, nodes, clusterCIDR)
 		if conflict {
 			if err = ksyun.ConflictRouteAlarm(ctx, route.RouteId, nodeName, podCidr); err != nil {
 				klog.Errorf("conflict route(routeId: %s, nodeName: %s, podCidr: %s) alarm failed: %v", route.RouteId, nodeName, podCidr, err)
@@ -89,12 +96,18 @@ func (r *ReconcileRoute) syncRoutes(ctx context.Context, nodes *v1.NodeList) err
 			klog.Infof("route(routeId: %s, cidr: %s) conflict with vpc route of node %s(podCidr: %s), alarmed.", route.RouteId, route.DestinationCIDR, nodeName, podCidr)
 
 			/*
-			if err = deleteRouteForInstance(ctx, "", route.RouteId); err != nil {
-				klog.Errorf("Could not delete conflict route %s %s, %s", route.RouteId, route.DestinationCIDR, err.Error())
-				continue
-			}
-			klog.Infof("Delete conflict route %s, %s SUCCESS.", route.RouteId, route.DestinationCIDR)
+				if err = deleteRouteForInstance(ctx, "", route.RouteId); err != nil {
+					klog.Errorf("Could not delete conflict route %s %s, %s", route.RouteId, route.DestinationCIDR, err.Error())
+					continue
+				}
+				klog.Infof("Delete conflict route %s, %s SUCCESS.", route.RouteId, route.DestinationCIDR)
 			*/
+		} else if residual {
+			if err = ksyun.ResidualRouteAlarm(ctx, route.RouteId, route.DestinationCIDR); err != nil {
+				klog.Errorf("residual route(routeId: %s, destinationCidr: %s) alarm failed: %v", route.RouteId, route.DestinationCIDR, err)
+			}
+
+			klog.Infof("residual route(routeId: %s, destinationCidr: %s) alarmed.", route.RouteId, route.DestinationCIDR)
 		}
 	}
 
@@ -120,16 +133,18 @@ func (r *ReconcileRoute) syncRoutes(ctx context.Context, nodes *v1.NodeList) err
 	return nil
 }
 
-func conflictWithNodes(ctx context.Context, route *model.Route, nodes *v1.NodeList) (bool, string, *net.IPNet) {
+func conflictWithNodesOrResidual(ctx context.Context, route *model.Route, nodes *v1.NodeList, clusterCIDR *net.IPNet) (bool, bool, string, *net.IPNet) {
 	if route.InstanceId == "" {
 		if err := ksyun.RouteInstanceIdIsNullAlarm(ctx, route.RouteId); err != nil {
-                        klog.Errorf("instanceId of route %s is null, alarm failed: %v", route.RouteId, err)
-                } else {
-                        klog.Infof("instanceId of route %s is null, alarmed.", route.RouteId)
-                }
+			klog.Errorf("instanceId of route %s is null, alarm failed: %v", route.RouteId, err)
+		} else {
+			klog.Infof("instanceId of route %s is null, alarmed.", route.RouteId)
+		}
 
-		return false, "", nil
+		return false, false, "", nil
 	}
+
+	found := false
 	for index, node := range nodes.Items {
 		ipv4Cidr, _, err := getIPv4RouteForNode(&nodes.Items[index])
 		if err != nil {
@@ -150,11 +165,21 @@ func conflictWithNodes(ctx context.Context, route *model.Route, nodes *v1.NodeLi
 		}
 		if contains || (equal && route.InstanceId != instanceId) {
 			klog.Warningf("conflict route with node %v(%v) found, route: %+v", node.Name, ipv4Cidr, route)
-			return true, node.Name, ipv4Cidr
+			return true, false, node.Name, ipv4Cidr
 		}
-
+		if equal && route.InstanceId == instanceId {
+			found = true
+		}
 	}
-	return false, "", nil
+
+	if !found {
+		_, contains, _ := containsRoute(clusterCIDR, route.DestinationCIDR)
+		if contains {
+			return false, true, "", nil
+		}
+	}
+
+	return false, false, "", nil
 }
 
 func findRoute(ctx context.Context, cidr string, cachedRoutes []*model.Route) (*model.Route, error) {
