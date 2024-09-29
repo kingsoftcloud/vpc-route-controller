@@ -84,15 +84,17 @@ func (r *ReconcileRoute) syncRoutes(ctx context.Context, nodes *v1.NodeList) err
 		if conflict {
 			if err = ksyun.ConflictRouteAlarm(ctx, route.RouteId, nodeName, podCidr); err != nil {
 				klog.Errorf("conflict route(routeId: %s, nodeName: %s, podCidr: %s) alarm failed: %v", route.RouteId, nodeName, podCidr, err)
-			} else {
-				klog.Infof("route(routeId: %s, cidr: %s) conflict with vpc route of node %s(podCidr: %s), alarmed.", route.RouteId, route.DestinationCIDR, nodeName, podCidr)
 			}
 
+			klog.Infof("route(routeId: %s, cidr: %s) conflict with vpc route of node %s(podCidr: %s), alarmed.", route.RouteId, route.DestinationCIDR, nodeName, podCidr)
+
+			/*
 			if err = deleteRouteForInstance(ctx, "", route.RouteId); err != nil {
 				klog.Errorf("Could not delete conflict route %s %s, %s", route.RouteId, route.DestinationCIDR, err.Error())
 				continue
 			}
 			klog.Infof("Delete conflict route %s, %s SUCCESS.", route.RouteId, route.DestinationCIDR)
+			*/
 		}
 	}
 
