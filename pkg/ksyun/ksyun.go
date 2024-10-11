@@ -9,6 +9,7 @@ import (
 	"golang.org/x/net/context"
 	log "k8s.io/klog/v2"
 
+	ctrlCfg "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/config"
 	openstack_client "ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/alarm"
 	"ezone.ksyun.com/ezone/kce/vpc-route-controller/pkg/ksyun/openstack_client/config"
@@ -191,7 +192,7 @@ func ConflictRouteAlarm(ctx context.Context, routeId, nodeName string, podCidr *
 		errStr := fmt.Sprintf("route(id: %s) conflict with vpc route of node %s (podCidr: %s)", routeId, nodeName, podCidr)
                 mesg := openstackTypes.AlarmArgs{
                         Name:     "ConflictRouteAlarm",
-                        Priority: "0",
+                        Priority: ctrlCfg.ControllerCFG.IllegalRouteAlarmLevel,
                         Product:  alarm.DefaultProduct,
                         NoDeal:   "0",
                         Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, errStr),
@@ -209,7 +210,7 @@ func ResidualRouteAlarm(ctx context.Context, routeId string, cidr string) error 
 		errStr := fmt.Sprintf("residual route(routeId: %s, destinationCidr: %s)", routeId, cidr)
                 mesg := openstackTypes.AlarmArgs{
                         Name:     "ResidualRouteAlarm",
-                        Priority: "0",
+                        Priority: ctrlCfg.ControllerCFG.IllegalRouteAlarmLevel,
                         Product:  alarm.DefaultProduct,
                         NoDeal:   "0",
                         Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, errStr),
@@ -227,7 +228,7 @@ func RouteInstanceIdIsNullAlarm(ctx context.Context, routeId string) error {
 		errStr := fmt.Sprintf("instanceId of route %s is null", routeId)
                 mesg := openstackTypes.AlarmArgs{
                         Name:     "RouteInstanceIdIsNullAlarm",
-                        Priority: "0",
+                        Priority: ctrlCfg.ControllerCFG.IllegalRouteAlarmLevel,
                         Product:  alarm.DefaultProduct,
                         NoDeal:   "0",
                         Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, errStr),

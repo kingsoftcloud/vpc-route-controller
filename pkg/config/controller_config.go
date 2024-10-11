@@ -11,7 +11,9 @@ import (
 const (
 	flagControllers                  = "controllers"
 	flagRouteReconciliationPeriod    = "route-reconciliation-period"
+	flagIllegalRouteAlarmLevel = "illegal-route-alarm-level"
 	defaultRouteReconciliationPeriod = 5 * time.Minute
+	defaultIllegalRouteAlarmLevel = "0"
 )
 
 var ControllerCFG = &ControllerConfig{}
@@ -21,6 +23,7 @@ type ControllerConfig struct {
 	config.KubeCloudSharedConfiguration
 	Controllers []string
 	LogLevel    int
+	IllegalRouteAlarmLevel string
 
 	RuntimeConfig RuntimeConfig
 }
@@ -29,6 +32,8 @@ func (cfg *ControllerConfig) BindFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVar(&cfg.Controllers, flagControllers, []string{"route"}, "A list of controllers to enable.")
 	fs.DurationVar(&cfg.RouteReconciliationPeriod.Duration, flagRouteReconciliationPeriod, defaultRouteReconciliationPeriod,
 		"The period for reconciling routes created for nodes by cloud provider. The minimum value is 1 minute")
+	fs.StringVar(&cfg.IllegalRouteAlarmLevel, flagIllegalRouteAlarmLevel, defaultIllegalRouteAlarmLevel,
+		"The level of alarm when vpc route conflicts or residual. The default level is 0")
 	cfg.RuntimeConfig.BindFlags(fs)
 }
 
