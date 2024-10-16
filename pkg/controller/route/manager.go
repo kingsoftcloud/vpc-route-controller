@@ -80,7 +80,7 @@ func (r *ReconcileRoute) syncRoutes(ctx context.Context, nodes *v1.NodeList) err
 		return fmt.Errorf("error listing routes: %w", err)
 	}
 
-	clusterCIDRStr := os.Getenv("ClUSTER_CIDR")
+	clusterCIDRStr := os.Getenv("CLUSTER_CIDR")
 	_, clusterCIDR, err := net.ParseCIDR(clusterCIDRStr)
 	if err != nil {
 		klog.Errorf("unparsable CIDR: %s - %v", clusterCIDRStr, err)
