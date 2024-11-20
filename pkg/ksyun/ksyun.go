@@ -210,9 +210,9 @@ func ResidualRouteAlarm(ctx context.Context, routeId string, cidr string) error 
 		errStr := fmt.Sprintf("residual route(routeId: %s, destinationCidr: %s)", routeId, cidr)
                 mesg := openstackTypes.AlarmArgs{
                         Name:     "ResidualRouteAlarm",
-                        Priority: ctrlCfg.ControllerCFG.IllegalRouteAlarmLevel,
+                        Priority: "2",
                         Product:  alarm.DefaultProduct,
-                        NoDeal:   "0",
+                        NoDeal:   "1",
                         Content:  fmt.Sprintf("region: %s, cluster: %s, plugin: vpc-route-controller,  error: %s", Cfg.Region, Cfg.ClusterUUID, errStr),
                 }
 
